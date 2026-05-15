@@ -129,23 +129,6 @@ def record_iteration(trace_id: str) -> None:
     pass  # tracked via iteration_count in run_end; hook reserved for future per-run tracking
 
 
-def get_metrics_dict() -> dict:
-    """Return a JSON-serializable metrics summary (used by /metrics endpoint in brain/main.py)."""
-    total = _totals["total"]
-    resolved = _totals["resolved"]
-    failed = _totals["failed"]
-    times = []  # Extended: can track per-run durations here
-
-    return {
-        "runs_total": total,
-        "runs_resolved": resolved,
-        "runs_failed": failed,
-        "flag_capture_rate": round(_totals["flag_captured"] / total, 3) if total > 0 else 0.0,
-        "success_rate": round(resolved / total, 3) if total > 0 else 0.0,
-        "active_runs": len(_run_starts),
-    }
-
-
 def prometheus_text() -> Optional[bytes]:
     """Return Prometheus text format for /metrics scrape endpoint."""
     if not _PROMETHEUS_AVAILABLE:

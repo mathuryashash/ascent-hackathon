@@ -1,0 +1,8 @@
+langgraph>=0.2.0
+langchain>=0.3.0
+langchain-core>=0.3.0
+langchain-google-genai>=2.1.0
+langchain-groq>=0.3.0
+pydantic>=2.6.3
+docker>=7.0.0
+tenacity>=8.2.0

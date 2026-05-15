@@ -39,9 +39,11 @@ SEED_PRODUCTS = [
     ("Anker 65W USB-C Hub",     "7-in-1 USB-C hub: HDMI, USB-A, SD card, PD charging.",               49.99),
 ]
 
-# The flag the pipeline must exfiltrate via SQLi UNION SELECT
+# The flag the pipeline must exfiltrate via SQLi UNION SELECT.
+# Override with CTF_FLAG env var so the value is not hardcoded in source control.
+_FLAG_VALUE = os.environ.get("CTF_FLAG", "CHIMERA{sql_injection_exploited_patch_me_now}")
 SEED_SECRETS = [
-    ("flag", "CHIMERA{sql_injection_exploited_patch_me_now}"),
+    ("flag", _FLAG_VALUE),
 ]
 
 

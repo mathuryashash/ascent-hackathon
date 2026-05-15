@@ -13,5 +13,5 @@ COPY . .
 
 EXPOSE 8000
 
-# Start FastAPI with uvicorn (--reload for dev convenience)
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Start FastAPI with uvicorn — single worker, no reload watcher in production
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]

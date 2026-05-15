@@ -1,0 +1,512 @@
+<!-- Project Chimera | Orchestration Timeline -->
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+    .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .glass-panel {
+        background: rgba(23, 31, 51, 0.4);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .timeline-item.active {
+        background: rgba(0, 218, 243, 0.1);
+        border-l: 3px solid #00daf3;
+    }
+    .timeline-item.completed {
+        background: rgba(168, 255, 210, 0.05);
+        border-l: 3px solid #a8ffd2;
+    }
+    .timeline-item.failed {
+        background: rgba(255, 180, 171, 0.05);
+        border-l: 3px solid #ffb4ab;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(0, 218, 243, 0.3);
+        border-radius: 3px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: rgba(0, 218, 243, 0.6);
+    }
+    .pulse-dot {
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+</style>
+<script id="tailwind-config">
+    tailwind.config = {
+        darkMode: "class",
+        theme: {
+            extend: {
+                "colors": {
+                    "background": "#0b1326",
+                    "on-secondary": "#213145",
+                    "tertiary-container": "#5be9ad",
+                    "on-primary-fixed-variant": "#004f58",
+                    "on-tertiary-container": "#006645",
+                    "on-tertiary": "#003824",
+                    "on-secondary-container": "#a9bad3",
+                    "secondary": "#b7c8e1",
+                    "on-tertiary-fixed": "#002113",
+                    "tertiary": "#a8ffd2",
+                    "surface-container": "#171f33",
+                    "error-container": "#93000a",
+                    "primary-fixed": "#9cf0ff",
+                    "surface-container-low": "#131b2e",
+                    "on-error": "#690005",
+                    "outline-variant": "#3b494c",
+                    "surface": "#0b1326",
+                    "secondary-fixed": "#d3e4fe",
+                    "inverse-on-surface": "#283044",
+                    "surface-dim": "#0b1326",
+                    "surface-tint": "#00daf3",
+                    "on-secondary-fixed": "#0b1c30",
+                    "outline": "#849396",
+                    "on-primary-container": "#00626e",
+                    "inverse-surface": "#dae2fd",
+                    "primary-container": "#00e5ff",
+                    "tertiary-fixed-dim": "#4edea3",
+                    "on-surface-variant": "#bac9cc",
+                    "on-secondary-fixed-variant": "#38485d",
+                    "primary": "#c3f5ff",
+                    "surface-bright": "#31394d",
+                    "inverse-primary": "#006875",
+                    "error": "#ffb4ab",
+                    "secondary-container": "#3a4a5f",
+                    "on-surface": "#dae2fd",
+                    "on-background": "#dae2fd",
+                    "on-tertiary-fixed-variant": "#005236",
+                    "surface-container-highest": "#2d3449",
+                    "surface-container-lowest": "#060e20",
+                    "on-primary-fixed": "#001f24",
+                    "on-error-container": "#ffdad6",
+                    "secondary-fixed-dim": "#b7c8e1",
+                    "surface-container-high": "#222a3d",
+                    "on-primary": "#00363d",
+                    "tertiary-fixed": "#6ffbbe",
+                    "surface-variant": "#2d3449",
+                    "primary-fixed-dim": "#00daf3"
+                },
+                "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+                },
+                "spacing": {
+                    "base": "4px",
+                    "gutter": "20px",
+                    "xs": "4px",
+                    "margin-mobile": "16px",
+                    "margin-desktop": "32px",
+                    "sm": "8px",
+                    "md": "16px",
+                    "xl": "40px",
+                    "lg": "24px"
+                },
+                "fontFamily": {
+                    "body-sm": ["Inter"],
+                    "display": ["Geist"],
+                    "headline-lg": ["Geist"],
+                    "headline-md": ["Geist"],
+                    "body-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "headline-sm": ["Geist"],
+                    "headline-lg-mobile": ["Geist"],
+                    "label-caps": ["Geist"],
+                    "code-sm": ["JetBrains Mono"]
+                },
+                "fontSize": {
+                    "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "headline-sm": ["20px", {"lineHeight": "1.4", "fontWeight": "500"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                    "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                    "code-sm": ["13px", {"lineHeight": "1.4", "fontWeight": "400"}]
+                }
+            },
+        },
+    }
+</script>
+</head>
+<body class="bg-background text-on-background font-body-md overflow-hidden h-screen flex">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col h-full py-lg gap-md bg-surface-container-low/60 backdrop-blur-xl border-r border-outline-variant/20 w-64 z-50">
+<div class="px-md mb-lg">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 bg-primary-container rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-fixed" data-icon="memory">memory</span>
+</div>
+<div>
+<h1 class="font-display text-headline-sm font-bold text-primary">Chimera</h1>
+<p class="font-label-caps text-[10px] text-on-surface-variant uppercase tracking-widest">Auto v2.4</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 flex flex-col gap-xs px-sm">
+<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" href="index.html">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-caps text-label-caps">Dashboard</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded text-primary border-r-2 border-primary bg-primary/5 transition-all" href="orchestration.html">
+<span class="material-symbols-outlined" data-icon="memory">memory</span>
+<span class="font-label-caps text-label-caps">Orchestration</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" href="observability.html">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-label-caps text-label-caps">Observability</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" href="auth.html">
+<span class="material-symbols-outlined" data-icon="terminal">terminal</span>
+<span class="font-label-caps text-label-caps">Auth Portal</span>
+</a>
+</nav>
+<div class="mt-auto px-sm flex flex-col gap-xs">
+<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="verified_user">verified_user</span>
+<span class="font-label-caps text-label-caps">Security</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col overflow-hidden relative">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center w-full px-margin-desktop h-16 sticky top-0 z-50 bg-surface/40 backdrop-blur-md border-b border-outline-variant/30">
+<div class="flex items-center gap-lg">
+<div class="font-display text-headline-md font-bold text-primary tracking-tight">Orchestration Timeline</div>
+</div>
+<div class="flex items-center gap-md">
+<span class="text-on-surface-variant text-[10px] font-code-sm" id="status-badge">IDLE</span>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-1 overflow-y-auto p-margin-desktop bg-background">
+<div class="max-w-[1600px] mx-auto space-y-xl">
+
+<!-- Execution Status -->
+<section class="glass-panel p-md space-y-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="schedule">schedule</span>
+<h2 class="font-display text-headline-sm text-primary">Current Execution</h2>
+</div>
+<div class="flex gap-md text-[10px] font-code-sm">
+<div class="flex items-center gap-xs">
+<div class="w-2 h-2 rounded-full bg-outline"></div>
+<span class="text-on-surface-variant" id="exec-timer">00:00:00</span>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-4 gap-md">
+<div class="bg-surface-container-low/50 p-md rounded">
+<div class="font-label-caps text-[10px] text-on-surface-variant uppercase mb-sm">Iteration</div>
+<div class="font-display text-headline-md text-primary" id="exec-iteration">-</div>
+</div>
+<div class="bg-surface-container-low/50 p-md rounded">
+<div class="font-label-caps text-[10px] text-on-surface-variant uppercase mb-sm">Current Node</div>
+<div class="font-display text-headline-md text-primary" id="exec-node">IDLE</div>
+</div>
+<div class="bg-surface-container-low/50 p-md rounded">
+<div class="font-label-caps text-[10px] text-on-surface-variant uppercase mb-sm">Status</div>
+<div class="font-display text-headline-md text-primary" id="exec-status">IDLE</div>
+</div>
+<div class="bg-surface-container-low/50 p-md rounded">
+<div class="font-label-caps text-[10px] text-on-surface-variant uppercase mb-sm">Trace ID</div>
+<div class="font-code-sm text-[11px] text-on-surface-variant" id="exec-trace">-</div>
+</div>
+</div>
+</section>
+
+<!-- Full Execution Timeline -->
+<section class="glass-panel p-md space-y-md">
+<div class="flex items-center justify-between border-b border-outline-variant/20 pb-sm">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="timeline">timeline</span>
+<h2 class="font-display text-headline-sm text-primary">Pipeline Execution Timeline</h2>
+</div>
+</div>
+
+<!-- Timeline Container -->
+<div class="space-y-sm">
+<!-- Ingress -->
+<div class="timeline-item p-md rounded border-l-2 border-l-outline-variant bg-surface-container-low/30">
+<div class="flex items-start justify-between mb-sm">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-secondary text-lg" data-icon="cloud_download">cloud_download</span>
+<div>
+<h3 class="font-body-sm font-semibold text-on-surface">Ingress: Webhook Reception</h3>
+<p class="font-code-sm text-[11px] text-on-surface-variant">Receives SIEM alert payload</p>
+</div>
+</div>
+<span class="font-code-sm text-[10px] text-on-surface-variant" id="ingress-time">--</span>
+</div>
+<div class="bg-surface-container-lowest/50 p-sm rounded border border-outline-variant/20 font-code-sm text-[10px] text-on-surface-variant" id="ingress-data">[Waiting...]</div>
+</div>
+
+<!-- Arrow -->
+<div class="flex justify-center">
+<div class="w-1 h-6 bg-gradient-to-b from-outline-variant/30 to-outline-variant/10"></div>
+</div>
+
+<!-- Scout -->
+<div class="timeline-item p-md rounded border-l-2 border-l-outline-variant bg-surface-container-low/30">
+<div class="flex items-start justify-between mb-sm">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-secondary text-lg" data-icon="visibility">visibility</span>
+<div>
+<h3 class="font-body-sm font-semibold text-on-surface">Scout: Target Reconnaissance</h3>
+<p class="font-code-sm text-[11px] text-on-surface-variant">Analyzes logs, services, and network topology</p>
+</div>
+</div>
+<span class="font-code-sm text-[10px] text-on-surface-variant" id="scout-time">--</span>
+</div>
+<div class="bg-surface-container-lowest/50 p-sm rounded border border-outline-variant/20 font-code-sm text-[10px] text-on-surface-variant h-20 overflow-y-auto custom-scrollbar" id="scout-data">[Waiting...]</div>
+</div>
+
+<!-- Arrow -->
+<div class="flex justify-center">
+<div class="w-1 h-6 bg-gradient-to-b from-outline-variant/30 to-outline-variant/10"></div>
+</div>
+
+<!-- Investigator -->
+<div class="timeline-item p-md rounded border-l-2 border-l-outline-variant bg-surface-container-low/30">
+<div class="flex items-start justify-between mb-sm">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-secondary text-lg" data-icon="search">search</span>
+<div>
+<h3 class="font-body-sm font-semibold text-on-surface">Investigator: Exploit Testing (Loop 1-10)</h3>
+<p class="font-code-sm text-[11px] text-on-surface-variant">Tests payloads iteratively, captures proof-of-concept</p>
+</div>
+</div>
+<span class="font-code-sm text-[10px] text-on-surface-variant" id="investigator-time">--</span>
+</div>
+<div class="grid grid-cols-2 gap-md mb-sm">
+<div class="bg-surface-container-lowest/50 p-sm rounded border border-outline-variant/20">
+<div class="font-label-caps text-[9px] text-on-surface-variant uppercase mb-xs">Hypothesis</div>
+<div class="font-code-sm text-[10px] text-on-surface-variant h-16 overflow-y-auto custom-scrollbar" id="investigator-hypothesis">[Testing...]</div>
+</div>
+<div class="bg-surface-container-lowest/50 p-sm rounded border border-outline-variant/20">
+<div class="font-label-caps text-[9px] text-on-surface-variant uppercase mb-xs">Exploit Proof</div>
+<div class="font-code-sm text-[10px] text-tertiary h-16 overflow-y-auto custom-scrollbar" id="investigator-exploit">[Testing...]</div>
+</div>
+</div>
+<div class="bg-surface-container-lowest/50 p-sm rounded border border-outline-variant/20">
+<div class="font-label-caps text-[9px] text-on-surface-variant uppercase mb-xs">Captured Flag</div>
+<div class="font-code-sm text-[10px] text-tertiary h-12 overflow-y-auto custom-scrollbar" id="investigator-flag">[Testing...]</div>
+</div>
+</div>
+
+<!-- Arrow -->
+<div class="flex justify-center">
+<div class="w-1 h-6 bg-gradient-to-b from-outline-variant/30 to-outline-variant/10"></div>
+</div>
+
+<!-- Architect -->
+<div class="timeline-item p-md rounded border-l-2 border-l-outline-variant bg-surface-container-low/30">
+<div class="flex items-start justify-between mb-sm">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-secondary text-lg" data-icon="construction">construction</span>
+<div>
+<h3 class="font-body-sm font-semibold text-on-surface">Architect: Patch Generation</h3>
+<p class="font-code-sm text-[11px] text-on-surface-variant">Analyzes source code, generates remediation patch</p>
+</div>
+</div>
+<span class="font-code-sm text-[10px] text-on-surface-variant" id="architect-time">--</span>
+</div>
+<div class="bg-surface-container-lowest/50 p-sm rounded border border-outline-variant/20 font-code-sm text-[10px] h-32 overflow-y-auto custom-scrollbar" id="architect-patch">
+<span class="text-on-surface-variant">[Generating patch...]</span>
+</div>
+</div>
+
+<!-- Arrow -->
+<div class="flex justify-center">
+<div class="w-1 h-6 bg-gradient-to-b from-outline-variant/30 to-outline-variant/10"></div>
+</div>
+
+<!-- Verifier -->
+<div class="timeline-item p-md rounded border-l-2 border-l-outline-variant bg-surface-container-low/30">
+<div class="flex items-start justify-between mb-sm">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-secondary text-lg" data-icon="check_circle">check_circle</span>
+<div>
+<h3 class="font-body-sm font-semibold text-on-surface">Verifier: Patch Validation</h3>
+<p class="font-code-sm text-[11px] text-on-surface-variant">Re-tests exploit against patched version</p>
+</div>
+</div>
+<span class="font-code-sm text-[10px] text-on-surface-variant" id="verifier-time">--</span>
+</div>
+<div class="bg-surface-container-lowest/50 p-sm rounded border border-outline-variant/20 font-code-sm text-[10px] text-on-surface-variant h-20 overflow-y-auto custom-scrollbar" id="verifier-result">[Awaiting patch testing...]</div>
+</div>
+</div>
+</section>
+
+<!-- Performance Metrics -->
+<section class="glass-panel p-md space-y-md">
+<div class="flex items-center gap-md border-b border-outline-variant/20 pb-sm">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="query_stats">query_stats</span>
+<h2 class="font-display text-headline-sm text-primary">Execution Performance</h2>
+</div>
+<div class="grid grid-cols-3 gap-md">
+<div class="bg-surface-container-low/50 p-md rounded">
+<div class="font-label-caps text-[10px] text-on-surface-variant uppercase mb-sm">Total Duration</div>
+<div class="font-display text-headline-lg text-primary" id="metric-duration">--</div>
+<div class="font-code-sm text-[10px] text-on-surface-variant">From ingress to complete</div>
+</div>
+<div class="bg-surface-container-low/50 p-md rounded">
+<div class="font-label-caps text-[10px] text-on-surface-variant uppercase mb-sm">Avg Node Latency</div>
+<div class="font-display text-headline-lg text-primary" id="metric-latency">--</div>
+<div class="font-code-sm text-[10px] text-on-surface-variant">Mean processing time</div>
+</div>
+<div class="bg-surface-container-low/50 p-md rounded">
+<div class="font-label-caps text-[10px] text-on-surface-variant uppercase mb-sm">Success Rate</div>
+<div class="font-display text-headline-lg text-primary" id="metric-success">--</div>
+<div class="font-code-sm text-[10px] text-on-surface-variant">Vulnerability patched</div>
+</div>
+</div>
+</section>
+
+</div>
+</main>
+</div>
+
+<script>
+    const STATE = {
+        startTime: null,
+        executionData: {},
+        nodeTimings: {}
+    };
+
+    function formatTime(ms) {
+        if (!ms) return '--';
+        const seconds = (ms / 1000).toFixed(2);
+        return `${seconds}s`;
+    }
+
+    function formatDuration(ms) {
+        if (!ms) return '--:--:--';
+        const totalSeconds = Math.floor(ms / 1000);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    function updateTimerDisplay() {
+        if (!STATE.startTime) return;
+        const elapsed = Date.now() - STATE.startTime;
+        document.getElementById('exec-timer').innerText = formatDuration(elapsed);
+        requestAnimationFrame(updateTimerDisplay);
+    }
+
+    function updateTimelineItem(nodeName, data) {
+        const nodeMap = {
+            'scout': { elem: 'scout', icon: 'visibility' },
+            'investigator': { elem: 'investigator', icon: 'search' },
+            'architect': { elem: 'architect', icon: 'construction' },
+            'verifier': { elem: 'verifier', icon: 'check_circle' }
+        };
+
+        if (!nodeMap[nodeName]) return;
+        const config = nodeMap[nodeName];
+
+        // Update data
+        if (data.target_topography) {
+            const elem = document.getElementById(`${config.elem}-data`);
+            if (elem) elem.innerText = data.target_topography;
+        }
+        if (data.current_hypothesis) {
+            const elem = document.getElementById(`${config.elem}-hypothesis`);
+            if (elem) elem.innerText = data.current_hypothesis;
+        }
+        if (data.exploit_proof) {
+            const elem = document.getElementById(`${config.elem}-exploit`);
+            if (elem) elem.innerText = data.exploit_proof;
+        }
+        if (data.captured_flag) {
+            const elem = document.getElementById(`${config.elem}-flag`);
+            if (elem) elem.innerText = data.captured_flag;
+        }
+        if (data.remediation_patch) {
+            const elem = document.getElementById(`${config.elem}-patch`);
+            if (elem) {
+                elem.innerHTML = '';
+                const lines = data.remediation_patch.split('\n').slice(0, 20);
+                lines.forEach(line => {
+                    const lineDiv = document.createElement('div');
+                    if (line.startsWith('+') && !line.startsWith('+++')) {
+                        lineDiv.className = 'text-tertiary';
+                    } else if (line.startsWith('-') && !line.startsWith('---')) {
+                        lineDiv.className = 'text-error';
+                    }
+                    lineDiv.innerText = line;
+                    elem.appendChild(lineDiv);
+                });
+            }
+        }
+    }
+
+    // WebSocket connection
+    const ws = new WebSocket('ws://localhost:8000/ws');
+
+    ws.onopen = () => {
+        console.log('Orchestration page connected to WebSocket');
+    };
+
+    ws.onmessage = (event) => {
+        try {
+            const data = JSON.parse(event.data);
+
+            if (data.event === 'alert_received') {
+                STATE.startTime = Date.now();
+                STATE.executionData = data.data;
+                document.getElementById('ingress-data').innerText = JSON.stringify(data.data, null, 2).substring(0, 200);
+                updateTimerDisplay();
+            }
+            else if (data.event === 'pipeline_step') {
+                const stepData = data.data;
+                
+                Object.keys(stepData).forEach(node => {
+                    const nodeData = stepData[node];
+                    if (nodeData.status) {
+                        document.getElementById('exec-status').innerText = nodeData.status.toUpperCase();
+                        document.getElementById('exec-node').innerText = node.toUpperCase();
+                    }
+                    if (nodeData.iteration_count !== undefined) {
+                        document.getElementById('exec-iteration').innerText = nodeData.iteration_count;
+                    }
+                    updateTimelineItem(node, nodeData);
+                });
+            }
+            else if (data.event === 'pipeline_complete') {
+                document.getElementById('exec-status').innerText = 'COMPLETED';
+                const totalTime = Date.now() - STATE.startTime;
+                document.getElementById('metric-duration').innerText = formatDuration(totalTime);
+            }
+
+        } catch (e) {
+            console.error('Parse error:', e);
+        }
+    };
+</script>
+</body></html>

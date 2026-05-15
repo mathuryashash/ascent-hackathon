@@ -406,13 +406,16 @@ HOME_HTML = """
 
                 if (data.status === 'error') {
                     status.innerHTML = `<span style="color: var(--danger)">Database Error Occurred</span>`;
-                    grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--danger); padding: 40px; font-family: monospace; background: rgba(239,68,68,0.1); border-radius: 12px;">${data.error || data.message}</div>`;
+                    const errDiv = document.createElement('div');
+                    errDiv.style.cssText = 'grid-column: 1/-1; text-align: center; color: var(--danger); padding: 40px; font-family: monospace; background: rgba(239,68,68,0.1); border-radius: 12px;';
+                    errDiv.textContent = data.error || data.message;
+                    grid.appendChild(errDiv);
                     return;
                 }
 
                 if (data.results && data.results.length > 0) {
                     status.textContent = `Found ${data.count} result(s)`;
-                    
+
                     data.results.forEach((product, i) => {
                         // Detect injected anomalous rows (SQLi payload success)
                         const isHacked = !product.description || typeof product.price !== 'number';
@@ -421,29 +424,60 @@ HOME_HTML = """
                         const card = document.createElement('div');
                         card.className = `product-card ${isHacked ? 'card-hacked' : ''}`;
                         card.style.animationDelay = `${delay}s`;
-                        
+
                         if (isHacked) {
-                            card.innerHTML = `
-                                <div class="product-title">SYSTEM_COMPROMISED</div>
-                                <div class="product-desc">
-                                    > DATA LEAK DETECTED<br>
-                                    > PAYLOAD EXECUTION SUCCESS<br><br>
-                                    ${JSON.stringify(product, null, 2)}
-                                </div>
-                                <div class="product-meta">
-                                    <span class="product-price" style="color:var(--danger)">NULL</span>
-                                    <span class="product-id">ERR_ID_${product.id || 'X'}</span>
-                                </div>
-                            `;
+                            // Use textContent for all user-data fields to prevent stored XSS
+                            const title = document.createElement('div');
+                            title.className = 'product-title';
+                            title.textContent = 'SYSTEM_COMPROMISED';
+
+                            const desc = document.createElement('div');
+                            desc.className = 'product-desc';
+                            desc.innerHTML = '> DATA LEAK DETECTED<br>> PAYLOAD EXECUTION SUCCESS<br><br>';
+                            const pre = document.createElement('pre');
+                            pre.style.display = 'inline';
+                            pre.textContent = JSON.stringify(product, null, 2);
+                            desc.appendChild(pre);
+
+                            const meta = document.createElement('div');
+                            meta.className = 'product-meta';
+                            const price = document.createElement('span');
+                            price.className = 'product-price';
+                            price.style.color = 'var(--danger)';
+                            price.textContent = 'NULL';
+                            const pid = document.createElement('span');
+                            pid.className = 'product-id';
+                            pid.textContent = `ERR_ID_${product.id || 'X'}`;
+                            meta.appendChild(price);
+                            meta.appendChild(pid);
+
+                            card.appendChild(title);
+                            card.appendChild(desc);
+                            card.appendChild(meta);
                         } else {
-                            card.innerHTML = `
-                                <div class="product-title">${product.name}</div>
-                                <div class="product-desc">${product.description}</div>
-                                <div class="product-meta">
-                                    <span class="product-price">$${product.price.toFixed(2)}</span>
-                                    <span class="product-id">UID_${product.id.toString().padStart(4, '0')}</span>
-                                </div>
-                            `;
+                            // Use textContent to prevent stored XSS from DB values
+                            const title = document.createElement('div');
+                            title.className = 'product-title';
+                            title.textContent = product.name;
+
+                            const desc = document.createElement('div');
+                            desc.className = 'product-desc';
+                            desc.textContent = product.description;
+
+                            const meta = document.createElement('div');
+                            meta.className = 'product-meta';
+                            const price = document.createElement('span');
+                            price.className = 'product-price';
+                            price.textContent = `$${product.price.toFixed(2)}`;
+                            const pid = document.createElement('span');
+                            pid.className = 'product-id';
+                            pid.textContent = `UID_${product.id.toString().padStart(4, '0')}`;
+                            meta.appendChild(price);
+                            meta.appendChild(pid);
+
+                            card.appendChild(title);
+                            card.appendChild(desc);
+                            card.appendChild(meta);
                         }
                         grid.appendChild(card);
                     });

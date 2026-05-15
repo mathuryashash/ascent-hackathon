@@ -13,6 +13,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         sqlmap \
     && rm -rf /var/lib/apt/lists/*
 
+# Non-root user for sandboxed command execution
+RUN useradd -m -s /bin/bash sandboxuser
+
 WORKDIR /sandbox
 
 # Keep the container alive — orchestrator will exec into it

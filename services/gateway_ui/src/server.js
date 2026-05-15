@@ -24,6 +24,15 @@ const runRegistry = new Map();
 
 app.use(express.json());
 
+// ── Security headers ──────────────────────────────────────────────────────────
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' ws: wss:;");
+  next();
+});
+
 // ── Static files ─────────────────────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
@@ -101,7 +110,7 @@ app.post('/api/reject/:traceId', async (req, res) => {
 });
 
 // ── SSE: real-time run state stream ──────────────────────────────────────────
-app.get('/events/:traceId', async (req, res) => {
+app.get('/api/events/:traceId', async (req, res) => {
   const { traceId } = req.params;
 
   res.setHeader('Content-Type', 'text/event-stream');
@@ -110,7 +119,7 @@ app.get('/events/:traceId', async (req, res) => {
   res.setHeader('X-Accel-Buffering', 'no'); // disable nginx buffering
   res.flushHeaders();
 
-  const TERMINAL_STATUSES = new Set(['resolved', 'failed']);
+  const TERMINAL_STATUSES = new Set(['resolved', 'failed', 'rejected']);
 
   const sendState = async () => {
     try {
@@ -151,8 +160,8 @@ app.get('/events/:traceId', async (req, res) => {
   });
 });
 
-// ── POST /trigger — fire a signed demo attack ─────────────────────────────────
-app.post('/trigger', async (req, res) => {
+// ── POST /api/trigger — fire a signed demo attack ────────────────────────────
+app.post('/api/trigger', async (req, res) => {
   if (!WEBHOOK_SECRET) {
     return res.status(503).json({ error: 'WEBHOOK_SECRET not configured on gateway' });
   }
@@ -202,8 +211,8 @@ app.post('/trigger', async (req, res) => {
   }
 });
 
-// ── GET /runs — list known runs ───────────────────────────────────────────────
-app.get('/runs', (req, res) => {
+// ── GET /api/runs — list known runs ──────────────────────────────────────────
+app.get('/api/runs', (req, res) => {
   const list = Array.from(runRegistry.values())
     .sort((a, b) => b.startTime - a.startTime)
     .slice(0, 20); // last 20 runs
@@ -217,6 +226,9 @@ app.get('/health', (req, res) => {
 
 // ── Catch-all: React app ──────────────────────────────────────────────────────
 app.get('*', (req, res) => {
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'Not found' });
+  }
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 

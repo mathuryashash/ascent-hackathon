@@ -41,8 +41,10 @@ SEED_USERS = [
     ("bob",   "bob@chimera.local",    "user",   "bob_pass_789"),
 ]
 
+# Override with CTF_FLAG env var so the value is not hardcoded in source control.
+_FLAG_VALUE = os.environ.get("CTF_FLAG", "CHIMERA{sql_injection_exploited_patch_me_now}")
 SEED_SECRETS = [
-    ("flag", "CHIMERA{sql_injection_exploited_patch_me_now}"),
+    ("flag", _FLAG_VALUE),
 ]
 
 SEED_PRODUCTS = [

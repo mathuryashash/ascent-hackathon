@@ -146,7 +146,8 @@ def health():
         db_ok = False
 
     status = "ok" if db_ok else "degraded"
-    return jsonify({"status": status, "db": db_ok}), 200
+    http_status = 200 if db_ok else 503
+    return jsonify({"status": status, "db": db_ok}), http_status
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -154,5 +155,6 @@ def health():
 # ─────────────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    # debug=True enables auto-reload when apply_patch_to_victim writes new source
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    # use_reloader=True enables auto-reload when apply_patch_to_victim writes new source;
+    # debug=False disables the Werkzeug interactive debugger (arbitrary RCE via /__debugger__)
+    app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=True)

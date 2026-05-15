@@ -1,0 +1,67 @@
+name: Path Protection
+
+on:
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  enforce-isolation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v44
+
+      - name: Verify Author Access
+        env:
+          AUTHOR: ${{ github.actor }}
+          CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
+        shell: bash
+        run: |
+          echo "PR Author: $AUTHOR"
+          
+          # Configuration: Define which user owns which path
+          # REPLACE THESE WITH ACTUAL GITHUB USERNAMES
+          MEMBER1="username1" # Systems & Security
+          MEMBER2="username2" # AI & Reasoning
+          MEMBER3="username3" # Full-Stack & Integration
+
+          # Define designated paths
+          PATH1="services/victim_sandbox/"
+          PATH2="services/brain/"
+          PATH3="services/gateway_ui/"
+
+          # Determine the allowed path for the current author
+          if [[ "$AUTHOR" == "$MEMBER1" ]]; then
+            ALLOWED_PATH="$PATH1"
+          elif [[ "$AUTHOR" == "$MEMBER2" ]]; then
+            ALLOWED_PATH="$PATH2"
+          elif [[ "$AUTHOR" == "$MEMBER3" ]]; then
+            ALLOWED_PATH="$PATH3"
+          else
+            echo "::error::User $AUTHOR is not recognized as a designated team member. Access denied."
+            exit 1
+          fi
+
+          echo "Author $AUTHOR is restricted to: $ALLOWED_PATH"
+
+          # Check each changed file
+          FORBIDDEN_FILES=()
+          for file in $CHANGED_FILES; do
+            if [[ ! $file == $ALLOWED_PATH* ]]; then
+              echo "::error::Illegal Modification: $file is outside of your designated folder ($ALLOWED_PATH)"
+              FORBIDDEN_FILES+=("$file")
+            fi
+          done
+
+          if [ ${#FORBIDDEN_FILES[@]} -ne 0 ]; then
+            echo "Build failed. You attempted to modify files outside your assigned space."
+            exit 1
+          fi
+
+          echo "Success: All modifications are within the assigned folder."

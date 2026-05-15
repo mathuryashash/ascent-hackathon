@@ -15,7 +15,7 @@ services:
       - ./services/victim_sandbox/logs:/app/logs    # SIEM tails this
       - victim-db:/data                             # Persist DB across Flask debug reloads
     ports:
-      - "5000:5000"        # View victim UI at http://localhost:5000
+      - "127.0.0.1:5000:5000"   # View victim UI at http://localhost:5000 (loopback only)
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5000/health || exit 1"]
       interval: 10s
@@ -35,6 +35,17 @@ services:
     networks:
       - chimera-internal   # ONLY internal — NO internet access
     command: tail -f /dev/null
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_RAW    # required for nmap ICMP probes
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     deploy:
       resources:
         limits:
@@ -56,7 +67,7 @@ services:
     ports:
       - "8000:8000"        # FastAPI webhook ingress + status polling
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock   # Docker SDK to exec into sandbox
+      - /var/run/docker.sock:/var/run/docker.sock:ro   # Docker SDK to exec into sandbox (read-only: exec_run only)
       - ./services/victim_sandbox/victim:/victim_src:ro    # Read-only source for Architect
       - ./services/victim_sandbox/victim:/victim_dst       # Writable for patch application
       - ./services/victim_sandbox/logs:/app/logs           # Victim logs for get_logs tool
