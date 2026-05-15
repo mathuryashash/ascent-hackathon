@@ -213,13 +213,11 @@ def _repair_json(s: str) -> str:
     return result
 
 
-def _parse_json_response(content: str, model_cls):
-    """Parse LLM response into a Pydantic model.
+def _to_snake(s: str) -> str:
+    return re.sub(r'(?<!^)(?=[A-Z])', '_', s).lower()
 
-    Tries the top-level JSON object first; if validation fails, recursively
-    tries every nested dict value. This handles LLMs that wrap their answer
-    inside an extra key (e.g. {"target_topography": {...actual fields...}}).
-    """
+def _parse_json_response(content: str, model_cls):
+    """Parse LLM response into a Pydantic model with fuzzy key matching."""
     clean = re.sub(r"```(?:json)?\s*", "", content).strip().rstrip("`").strip()
     match = re.search(r"\{.*\}", clean, re.DOTALL)
     if not match:
@@ -231,6 +229,16 @@ def _parse_json_response(content: str, model_cls):
         log.warning("json_parse_repair", error=str(exc), snippet=json_str[:120])
         repaired = _repair_json(json_str)
         data = json.loads(repaired, strict=False)
+
+    # --- Fuzzy Key Normalization (camelCase -> snake_case) ---
+    def normalize_keys(obj):
+        if isinstance(obj, dict):
+            return {_to_snake(k): normalize_keys(v) for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [normalize_keys(v) for v in obj]
+        return obj
+
+    data = normalize_keys(data)
 
     # --- Try top-level first ---
     try:
