@@ -9,9 +9,12 @@ Designing the "Brain" of Project Chimera. You are responsible for the LangGraph 
 - [ ] **LangGraph Scaffold:**
     - Define the `GraphState` TypedDict (include `iteration_count`, `trace_id`, `status`).
     - Set up the SQLite `MemorySaver` for state persistence.
-    - Implement the `IterationGuard` to stop the graph after 10 loops.
+- [ ] **Multi-Model Setup:**
+    - Configure **Groq (Llama 3 70B)** for the Investigator node (High Speed).
+    - Configure **Gemini 1.5 Pro (Google AI Studio)** for the Architect node (High Context).
+    - Configure **Gemini 1.5 Flash** for the Summarizer sub-routine.
 - [ ] **Structured Outputs:**
-    - Use Pydantic models to force the LLM to return strict JSON for tool calls (e.g., `InvestigatorAction`).
+    - Use Pydantic models to force Groq/Gemini to return strict JSON for tool calls.
 
 ## Phase 2: Agent Logic (Hour 6 - 16)
 - [ ] **Prompt Engineering:**

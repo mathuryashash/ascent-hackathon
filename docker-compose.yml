@@ -1,0 +1,120 @@
+name: chimera
+
+# Network topology:
+#   public_net   → orchestrator, siem, gateway_ui  (internet-accessible)
+#   internal_net → sandbox, victim only            (no internet, internal: true)
+# The orchestrator reaches sandbox/victim via the Docker socket (exec/SDK),
+# NOT through a network route, so it stays on public_net only.
+
+networks:
+  public_net:
+    driver: bridge
+  internal_net:
+    driver: bridge
+    internal: true   # no internet egress for sandbox or victim
+
+volumes:
+  victim_data:
+  checkpoints:
+
+services:
+
+  # ── Victim: intentionally vulnerable Flask app ──────────────────────────
+  victim:
+    build:
+      context: services/victim_sandbox/victim
+      dockerfile: Dockerfile
+    container_name: chimera-victim-1
+    networks:
+      - internal_net
+    volumes:
+      - victim_data:/data
+    environment:
+      - DB_PATH=/data/victim.db
+    user: "1001:1001"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Sandbox: isolated payload execution environment ──────────────────────
+  sandbox:
+    build:
+      context: services/victim_sandbox/sandbox
+      dockerfile: Dockerfile
+    container_name: chimera-sandbox-1
+    networks:
+      - internal_net
+    mem_limit: 256m
+    cpus: "0.5"
+    user: "1002:1002"
+    restart: unless-stopped
+
+  # ── Orchestrator: LangGraph brain (built by Member 2) ───────────────────
+  orchestrator:
+    build:
+      context: services/brain
+      dockerfile: Dockerfile
+    container_name: chimera-orchestrator-1
+    ports:
+      - "8000:8000"
+    networks:
+      - public_net
+    volumes:
+      # Host-side Docker socket — used only by tools.py (never mounted into
+      # sandbox or victim containers)
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - checkpoints:/app/checkpoints
+      # Victim source exposed read-only so Architect can read and patch it
+      - ./services/victim_sandbox/victim:/victim_src:rw
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+      - SANDBOX_CONTAINER=chimera-sandbox-1
+      - VICTIM_CONTAINER=chimera-victim-1
+      - VICTIM_SRC_PATH=/victim_src
+    depends_on:
+      victim:
+        condition: service_healthy
+      sandbox:
+        condition: service_started
+    restart: unless-stopped
+
+  # ── SIEM: log monitor + webhook dispatcher ───────────────────────────────
+  siem:
+    build:
+      context: services/victim_sandbox/siem
+      dockerfile: Dockerfile
+    container_name: chimera-siem-1
+    networks:
+      - public_net
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - WEBHOOK_URL=http://orchestrator:8000/webhook
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+      - VICTIM_CONTAINER=chimera-victim-1
+      - POLL_INTERVAL=5
+    depends_on:
+      - victim
+      - orchestrator
+    restart: unless-stopped
+
+  # ── Gateway UI: monitoring dashboard (built by Member 3) ────────────────
+  gateway_ui:
+    build:
+      context: services/gateway_ui
+      dockerfile: Dockerfile
+    container_name: chimera-gateway-1
+    ports:
+      - "3000:3000"
+    networks:
+      - public_net
+    environment:
+      - ORCHESTRATOR_URL=http://orchestrator:8000
+    depends_on:
+      - orchestrator
+    restart: unless-stopped
