@@ -17,35 +17,42 @@ from pydantic import BaseModel, Field
 # ---------------------------------------------------------------------------
 
 class ScoutOutput(BaseModel):
-    """Output from the Scout node (Gemini 1.5 Flash)."""
+    """Output from the Scout node."""
     vulnerability_type: str = Field(
-        description="Type of vulnerability detected (e.g. 'SQL Injection', 'XSS')"
+        default="unknown",
+        description="Type of vulnerability detected"
     )
     affected_endpoints: list[str] = Field(
+        default_factory=list,
         description="List of affected API endpoints or routes"
     )
     topography_summary: str = Field(
-        description="5-line max summary of the target's attack surface"
+        default="Target mapped.",
+        description="Summary of the target's attack surface"
     )
     recommended_approach: str = Field(
-        description="Recommended exploitation strategy for the Investigator"
+        default="Investigate for injection.",
+        description="Recommended strategy"
     )
 
 
 class InvestigatorOutput(BaseModel):
-    """Output from the Investigator node (Groq Llama 3 70B)."""
+    """Output from the Investigator node."""
     hypothesis: str = Field(
-        description="The suspected vulnerability vector and why it should work"
+        default="Testing vulnerability.",
+        description="The suspected vulnerability vector"
     )
     exploit_payload: str = Field(
-        description="The exact bash/curl command to run in the sandbox to exploit the vulnerability"
+        description="The exact bash/curl command to run"
     )
     reasoning_steps: list[str] = Field(
-        description="Step-by-step chain of thought leading to this exploit"
+        default_factory=list,
+        description="Steps leading to this exploit"
     )
     confidence_score: float = Field(
+        default=0.5,
         ge=0.0, le=1.0,
-        description="Confidence that this exploit will succeed (0.0-1.0)"
+        description="Confidence score"
     )
 
 

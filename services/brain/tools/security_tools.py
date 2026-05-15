@@ -9,24 +9,22 @@ import shutil
 import datetime
 import urllib.parse
 import pathlib
+import subprocess
+import tempfile
 from typing import Optional
 
-import docker  # pip install docker>=6.0.0
+import docker
 
-# ---------------------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────────────────
 # Environment Configuration
-# ---------------------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────────────────
 
-LOG_PATH = os.environ.get("LOG_PATH", "/app/logs/access.log")
-VICTIM_SRC_PATH = os.environ.get("VICTIM_SRC_PATH", "/victim_src")   # read-only mount
-VICTIM_DST_PATH = os.environ.get("VICTIM_DST_PATH", "/victim_dst")   # writable mount for patches
+LOG_PATH = os.environ.get("LOG_PATH", "/app/victim-logs/access.log")
+VICTIM_SRC_PATH = os.environ.get("VICTIM_SRC_PATH", "/app/victim-src/")
 SANDBOX_CONTAINER_NAME = os.environ.get("SANDBOX_CONTAINER", "chimera-sandbox")
 VICTIM_HOST = os.environ.get("VICTIM_HOST", "http://chimera-victim:5000")
 
-# Patterns that indicate suspicious SQL injection activity
 SUSPICIOUS_KEYWORDS = ["UNION", "SELECT", "--", "OR 1=1", "DROP", "INSERT", "'"]
-
-# Strings in HTTP response bodies that indicate a SQLite error was triggered
 SQL_ERROR_INDICATORS = [
     "sqlite3.OperationalError",
     "syntax error",
@@ -35,65 +33,44 @@ SQL_ERROR_INDICATORS = [
     "unrecognized token",
 ]
 
-
-# ---------------------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────────────────
 # Tool 1: get_logs
-# ---------------------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────────────────
 
 def get_logs(tail_lines: int = 50) -> dict:
-    """
-    Reads the last N lines from the victim's access.log file.
-    """
+    """Reads the last N lines from the victim's access.log file."""
     try:
         log_file = pathlib.Path(LOG_PATH)
-
         if not log_file.exists():
-            return {
-                "status": "error",
-                "message": f"Log file not found at {LOG_PATH}"
-            }
+            return {"status": "error", "message": f"Log file not found at {LOG_PATH}"}
 
         with open(log_file, "r", encoding="utf-8", errors="replace") as f:
             all_lines = f.readlines()
 
         tail = [line.rstrip() for line in all_lines[-tail_lines:]]
-
-        suspicious = [
-            line for line in tail
-            if any(kw.lower() in line.lower() for kw in SUSPICIOUS_KEYWORDS)
-        ]
+        suspicious = [line for line in tail if any(kw.lower() in line.lower() for kw in SUSPICIOUS_KEYWORDS)]
 
         return {
             "status": "success",
             "log_lines": tail,
             "suspicious_entries": suspicious
         }
-
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-
-# ---------------------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────────────────
 # Tool 2: execute_bash_in_sandbox
-# ---------------------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────────────────
 
-def execute_bash_in_sandbox(command: str) -> dict:
-    """
-    Executes a bash command INSIDE the chimera-sandbox container.
-    """
+def execute_bash_in_sandbox(command: str, timeout_seconds: int = 30) -> dict:
+    """Executes a bash command INSIDE the sandbox container."""
     try:
         client = docker.from_env()
         container = client.containers.get(SANDBOX_CONTAINER_NAME)
-
-        exec_result = container.exec_run(
-            cmd=["bash", "-c", command],
-            demux=True,
-            user="sandboxuser",
-        )
-
+        exec_result = container.exec_run(cmd=["bash", "-c", command], demux=True)
+        
         exit_code = exec_result.exit_code
         stdout_raw, stderr_raw = exec_result.output if exec_result.output else (b"", b"")
-
         stdout = stdout_raw.decode("utf-8", errors="replace").strip() if stdout_raw else ""
         stderr = stderr_raw.decode("utf-8", errors="replace").strip() if stderr_raw else ""
 
@@ -106,40 +83,28 @@ def execute_bash_in_sandbox(command: str) -> dict:
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-
-# ---------------------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────────────────
 # Tool 3: run_http_probe
-# ---------------------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────────────────
 
-def run_http_probe(
-    path: str,
-    params: Optional[dict] = None,
-    method: str = "GET"
-) -> dict:
-    """
-    Makes an HTTP request to the Victim App from inside the Sandbox container.
-    """
+def run_http_probe(path: str, params: Optional[dict] = None, method: str = "GET") -> dict:
+    """Makes an HTTP request to the Victim App from inside the Sandbox."""
     try:
         encoded_params = urllib.parse.urlencode(params or {})
         url = f"{VICTIM_HOST}{path}"
-        if encoded_params:
-            url = f"{url}?{encoded_params}"
+        if encoded_params: url = f"{url}?{encoded_params}"
 
         curl_cmd = f'curl -s --globoff -o - -w "\\n%{{http_code}}" --max-time 10 "{url}"'
-
         if method.upper() == "POST":
             curl_cmd = f'curl -s --globoff -o - -w "\\n%{{http_code}}" --max-time 10 -X POST "{url}"'
 
         result = execute_bash_in_sandbox(curl_cmd)
-
-        if result["status"] == "error":
-            return result
+        if result["status"] == "error": return result
 
         raw_output = result["stdout"]
         lines = raw_output.rsplit("\n", 1)
         body = lines[0].strip() if len(lines) == 2 else raw_output
         http_status = int(lines[1].strip()) if len(lines) == 2 else 0
-
         contains_sql_error = any(indicator.lower() in body.lower() for indicator in SQL_ERROR_INDICATORS)
 
         return {
@@ -151,83 +116,57 @@ def run_http_probe(
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Tool 4: verify_patch (Supports Unified Diffs)
+# ─────────────────────────────────────────────────────────────────────────────
 
-# ---------------------------------------------------------------------------
-# Tool 4: apply_patch_to_victim
-# ---------------------------------------------------------------------------
+def verify_patch(file_path: str, diff: str) -> dict:
+    """Applies a unified diff to a file and verifies it patches cleanly."""
+    full_path = os.path.join(VICTIM_SRC_PATH, file_path)
+    if not os.path.isfile(full_path):
+        return {"status": "error", "message": f"File not found: {full_path}"}
 
-def apply_patch_to_victim(filename: str, patched_content: str) -> dict:
-    """
-    Writes patched file content directly to the Victim App's writable source mount.
-    """
+    patch_fd, patch_path = tempfile.mkstemp(suffix=".patch")
     try:
-        base_path = pathlib.Path(VICTIM_DST_PATH).resolve()
-        target_file = (base_path / filename).resolve()
+        with os.fdopen(patch_fd, "w") as f:
+            f.write(diff)
 
-        # Path traversal protection — use relative_to() which is unambiguous
-        try:
-            target_file.relative_to(base_path)
-        except ValueError:
-            return {
-                "status": "error",
-                "message": f"Path traversal attempt detected for filename: {filename}"
-            }
-
-        # Write the patched content
-        target_file.parent.mkdir(parents=True, exist_ok=True)
-        target_file.write_text(patched_content, encoding="utf-8")
-
-        return {
-            "status": "success",
-            "filename": filename,
-            "bytes_written": len(patched_content)
-        }
+        # Apply patch using git apply
+        apply = subprocess.run(
+            ["git", "apply", patch_path],
+            capture_output=True, text=True, timeout=30, cwd=VICTIM_SRC_PATH
+        )
+        if apply.returncode == 0:
+            return {"status": "success", "output": apply.stdout}
+        else:
+            return {"status": "error", "message": apply.stderr.strip() or "Patch application failed"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+    finally:
+        if os.path.exists(patch_path): os.unlink(patch_path)
 
-
-# ---------------------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────────────────
 # Tool 5: get_victim_source
-# ---------------------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────────────────
 
 def get_victim_source(filename: str = "app.py") -> dict:
-    """
-    Reads the current source code of a Victim App file.
-    """
+    """Reads current source code of a Victim App file."""
     try:
-        base_path = pathlib.Path(VICTIM_SRC_PATH).resolve()
-        target_file = (base_path / filename).resolve()
-
-        # Path traversal protection — use relative_to() which is unambiguous
-        try:
-            target_file.relative_to(base_path)
-        except ValueError:
-            return {
-                "status": "error",
-                "message": f"Path traversal attempt detected for filename: {filename}"
-            }
-
-        if not target_file.exists():
-            return {
-                "status": "error",
-                "message": f"File not found: {filename}"
-            }
-
-        content = target_file.read_text(encoding="utf-8", errors="replace")
-
-        return {
-            "status": "success",
-            "filename": filename,
-            "content": content
-        }
+        full_path = os.path.join(VICTIM_SRC_PATH, filename)
+        if not os.path.exists(full_path):
+            return {"status": "error", "message": f"File not found: {filename}"}
+        
+        with open(full_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        
+        return {"status": "success", "content": content}
     except Exception as e:
         return {"status": "error", "message": str(e)}
-
 
 TOOL_REGISTRY = {
     "get_logs": get_logs,
     "execute_bash_in_sandbox": execute_bash_in_sandbox,
     "run_http_probe": run_http_probe,
-    "apply_patch_to_victim": apply_patch_to_victim,
+    "verify_patch": verify_patch,
     "get_victim_source": get_victim_source,
 }
