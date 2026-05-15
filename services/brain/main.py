@@ -14,6 +14,7 @@ import json
 import uuid
 import hashlib
 import hmac
+import time
 import structlog
 import asyncio
 from typing import List, Dict, Any, Optional
@@ -38,10 +39,20 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Allow UI (different origin) to call the API
+# Allow UI (different origin) to call the API.
+# ALLOWED_ORIGIN can be "*" (wildcard) or a comma-separated list of origins.
+_origins_raw = os.getenv("ALLOWED_ORIGIN", "http://localhost:3001")
+if _origins_raw.strip() == "*":
+    _allow_origins = ["*"]
+    _allow_credentials = False
+else:
+    _allow_origins = [o.strip() for o in _origins_raw.split(",") if o.strip()]
+    _allow_credentials = True
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[os.getenv("ALLOWED_ORIGIN", "http://localhost:3001")],
+    allow_origins=_allow_origins,
+    allow_credentials=_allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -125,9 +136,10 @@ if not WEBHOOK_SECRET or len(WEBHOOK_SECRET) < 32:
 _early_states: dict[str, dict] = {}
 _early_state_times: dict[str, float] = {}
 _EARLY_STATE_TTL = 3600  # 1 hour
+_last_trigger_time: float = 0.0
 
 def _prune_early_states() -> None:
-    now = __import__("time").time()
+    now = time.time()
     stale = [k for k, t in _early_state_times.items() if now - t > _EARLY_STATE_TTL]
     for k in stale:
         _early_states.pop(k, None)
@@ -186,10 +198,13 @@ async def _run_pipeline(alert_payload: dict, trace_id: str) -> None:
     iters = 0
     flag = False
     try:
+        trigger_data = alert_payload.get("trigger") or {}
+        matched_pattern = trigger_data.get("matched_pattern") or alert_payload.get("type") or "Unknown Alert"
+        
         await manager.broadcast({
             "event": "alert_received",
             "data": {
-                "type": alert_payload.get("trigger", {}).get("matched_pattern", "Unknown Alert"),
+                "type": matched_pattern,
                 "source": alert_payload.get("source", "external"),
                 "trace_id": trace_id,
             },
@@ -212,7 +227,6 @@ async def _run_pipeline(alert_payload: dict, trace_id: str) -> None:
             ):
                 serialized_event = serialize_state(event)
                 await manager.broadcast({"event": "pipeline_step", "data": serialized_event})
-                await asyncio.sleep(0.5)
 
             snapshot = await graph.aget_state({"configurable": {"thread_id": trace_id}})
             final_state = snapshot.values if snapshot else {}
@@ -236,6 +250,13 @@ async def _run_pipeline(alert_payload: dict, trace_id: str) -> None:
     except Exception as e:
         log.error("pipeline_outer_error", trace_id=trace_id, error=str(e))
     finally:
+        _early_states[trace_id] = {
+            "trace_id": trace_id,
+            "status": status,
+            "iteration_count": iters,
+            "has_flag": flag,
+        }
+        _early_state_times[trace_id] = time.time()
         record_run_end(trace_id, status, iters, flag)
 
 # ---------------------------------------------------------------------------
@@ -263,7 +284,7 @@ async def webhook_alert(
     trace_id = str(uuid.uuid4())
     _prune_early_states()
     _early_states[trace_id] = {"trace_id": trace_id, "status": "queued"}
-    _early_state_times[trace_id] = __import__("time").time()
+    _early_state_times[trace_id] = time.time()
     background_tasks.add_task(_run_pipeline, alert.model_dump(), trace_id)
     return {"trace_id": trace_id, "status": "queued"}
 
@@ -271,8 +292,12 @@ DEMO_TRIGGER_ENABLED = os.getenv("DEMO_TRIGGER_ENABLED", "false").lower() == "tr
 
 @app.post("/trigger", status_code=202)
 async def trigger_demo(background_tasks: BackgroundTasks):
+    global _last_trigger_time
     if not DEMO_TRIGGER_ENABLED:
         raise HTTPException(status_code=403, detail="Demo trigger not enabled. Set DEMO_TRIGGER_ENABLED=true.")
+    if time.time() - _last_trigger_time < 10:
+        raise HTTPException(status_code=429, detail="Rate limited — try again in a few seconds.")
+    _last_trigger_time = time.time()
     import datetime
     payload = {
         "alert_id": str(uuid.uuid4()),
@@ -289,7 +314,7 @@ async def trigger_demo(background_tasks: BackgroundTasks):
     trace_id = str(uuid.uuid4())
     _prune_early_states()
     _early_states[trace_id] = {"trace_id": trace_id, "status": "queued"}
-    _early_state_times[trace_id] = __import__("time").time()
+    _early_state_times[trace_id] = time.time()
     background_tasks.add_task(_run_pipeline, payload, trace_id)
     return {"trace_id": trace_id, "status": "queued"}
 
@@ -336,7 +361,16 @@ async def _resume_pipeline(trace_id: str) -> None:
         snapshot = await graph.aget_state(config)
         final_state = snapshot.values if snapshot else {}
         status = final_state.get("status", "completed")
-        record_run_end(trace_id, status, final_state.get("iteration_count", 0), bool(final_state.get("captured_flag")))
+        iters = final_state.get("iteration_count", 0)
+        flag = bool(final_state.get("captured_flag"))
+        _early_states[trace_id] = {
+            "trace_id": trace_id,
+            "status": status,
+            "iteration_count": iters,
+            "has_flag": flag,
+        }
+        _early_state_times[trace_id] = time.time()
+        record_run_end(trace_id, status, iters, flag)
         await manager.broadcast({"event": "pipeline_complete", "data": {"status": status, "trace_id": trace_id}})
     except Exception as e:
         log.error("resume_error", trace_id=trace_id, error=str(e))
@@ -369,6 +403,29 @@ async def reject_patch(trace_id: str, _token: None = Depends(verify_admin_token)
     await manager.broadcast({"event": "human_rejected", "data": {"trace_id": trace_id}})
     await manager.broadcast({"event": "pipeline_complete", "data": {"status": "rejected", "trace_id": trace_id}})
     return {"trace_id": trace_id, "status": "rejected"}
+
+
+@app.get("/verify-fix/{trace_id}")
+async def verify_fix(trace_id: str):
+    """Re-runs the original exploit against the victim to confirm the patch blocked it."""
+    import httpx
+    import re
+    victim_host = os.getenv("VICTIM_HOST", "http://chimera-victim:5000")
+
+    # Standard SQLi probe
+    test_url = f"{victim_host}/search?q=' UNION SELECT 1,value,'x',0 FROM secrets WHERE key='flag'--"
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            r = await client.get(test_url)
+        flag_found = bool(re.search(r"CHIMERA\{[^}]+\}", r.text, re.IGNORECASE))
+        return {
+            "trace_id": trace_id,
+            "exploit_blocked": not flag_found,
+            "status_code": r.status_code,
+            "verdict": "PATCH_EFFECTIVE" if not flag_found else "STILL_VULNERABLE",
+        }
+    except Exception as e:
+        return {"trace_id": trace_id, "error": str(e), "verdict": "UNREACHABLE"}
 
 
 @app.get("/traces")

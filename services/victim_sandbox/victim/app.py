@@ -9,15 +9,44 @@ import os
 import sqlite3
 import datetime
 from flask import Flask, request, jsonify, render_template_string
+from flask_cors import CORS
+
 
 app = Flask(__name__)
+CORS(app)
+
 
 DB_PATH = os.environ.get("DB_PATH", "/app/database.db")
 LOG_PATH = os.environ.get("LOG_PATH", "/app/logs/access.log")
 
 # ?????????????????????????????????????????????????????????????????????????????
-# HTML Template
+# HTML Templates
 # ?????????????????????????????????????????????????????????????????????????????
+
+LOGIN_HTML = """
+<!DOCTYPE html><html><head><title>Login - Chimera Tech</title>
+<style>body{font-family:sans-serif;background:#0b1326;color:#dae2fd;display:flex;justify-content:center;align-items:center;height:100vh;margin:0}
+.box{background:#171f33;border:1px solid #3b494c;padding:40px;border-radius:8px;width:320px}
+h2{color:#00daf3;margin-top:0}input{width:100%;padding:8px;margin:8px 0 16px;background:#0b1326;border:1px solid #3b494c;color:#dae2fd;border-radius:4px;box-sizing:border-box}
+button{width:100%;padding:10px;background:#006875;color:#fff;border:none;border-radius:4px;cursor:pointer}
+.error{color:#ffb4ab;margin-bottom:12px;font-size:14px}</style></head>
+<body><div class="box"><h2>🔒 Staff Login</h2>
+{% if error %}<div class="error">{{ error }}</div>{% endif %}
+<form method="POST"><input name="username" placeholder="Username" required/><input name="password" type="password" placeholder="Password" required/>
+<button type="submit">Login</button></form>
+<p style="font-size:12px;color:#849396;margin-top:16px">Hint: Try <code>' OR '1'='1</code></p></div></body></html>
+"""
+
+LOGIN_SUCCESS_HTML = """
+<!DOCTYPE html><html><head><title>Welcome - Chimera Tech</title>
+<style>body{font-family:sans-serif;background:#0b1326;color:#dae2fd;display:flex;justify-content:center;align-items:center;height:100vh;margin:0}
+.box{background:#171f33;border:1px solid #a8ffd2;padding:40px;border-radius:8px;width:320px;text-align:center}
+h2{color:#a8ffd2}</style></head>
+<body><div class="box"><h2>✅ Access Granted</h2>
+<p>Welcome, <strong>{{ username }}</strong>!</p>
+<p style="color:#849396;font-size:13px">Auth bypass successful via SQL injection.</p>
+<a href="/" style="color:#00daf3">← Back to Shop</a></div></body></html>
+"""
 
 HOME_HTML = """
 <!DOCTYPE html>
@@ -577,6 +606,28 @@ def search():
 
     log_request(query, status_code)
     return jsonify(response), status_code
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    """Intentionally vulnerable login — demonstrates auth bypass via SQLi."""
+    error = None
+    if request.method == 'POST':
+        username = request.form.get('username', '')
+        password = request.form.get('password', '')
+        # INTENTIONALLY VULNERABLE: raw string interpolation
+        query = f"SELECT * FROM users WHERE username = '{username}' AND password = '{password}'"
+        try:
+            cur = get_db().execute(query)
+            user = cur.fetchone()
+        except Exception as e:
+            error = f"DB error: {e}"
+            user = None
+        if user:
+            return render_template_string(LOGIN_SUCCESS_HTML, username=user[0] if user else username)
+        else:
+            error = error or "Invalid credentials"
+    return render_template_string(LOGIN_HTML, error=error)
 
 
 @app.route("/health")

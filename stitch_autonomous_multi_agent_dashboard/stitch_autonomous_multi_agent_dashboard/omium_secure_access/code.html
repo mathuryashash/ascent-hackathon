@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Geist:wght@500;600;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>body {
+    background-color: #0b1326;
+    margin: 0;
+    padding: 0;
+    overflow: hidden
+    }
+.material-symbols-outlined {
+    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24
+    }
+.glass-card {
+    background: rgba(23, 31, 51, 0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1)
+    }
+.network-bg {
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuBVIsCeTO0BN6IiDALOObl1mRYKqYCDBjkLVSxw5RXqu5NvI4Kj8fHb8BNLAf9eEb3QGzWB_47b4oE4S5R0NtpYhtG2pROe6liYko_rBML8FbJEvIRCACMxtFVs6HYPh4_TnZqWYo3R6z7lJak6BcHuISU8ajavDTU50A_fU5k-sovCv9k3CzOsPSTZ6IrQa0FNgsZIYpbS1-FRdYWxNC59sKh2saktNEGbVhlzTLZaBW_gpXFV_DZWpKN6tzDNNM0eanp4AUL1cqzx);
+    background-size: cover;
+    background-position: center;
+    filter: brightness(0.2) contrast(1.2) blur(4px)
+    }</style>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+                  "background": "#0b1326",
+                  "on-secondary": "#213145",
+                  "tertiary-container": "#5be9ad",
+                  "on-primary-fixed-variant": "#004f58",
+                  "on-tertiary-container": "#006645",
+                  "on-tertiary": "#003824",
+                  "on-secondary-container": "#a9bad3",
+                  "secondary": "#b7c8e1",
+                  "on-tertiary-fixed": "#002113",
+                  "tertiary": "#a8ffd2",
+                  "surface-container": "#171f33",
+                  "error-container": "#93000a",
+                  "primary-fixed": "#9cf0ff",
+                  "surface-container-low": "#131b2e",
+                  "on-error": "#690005",
+                  "outline-variant": "#3b494c",
+                  "surface": "#0b1326",
+                  "secondary-fixed": "#d3e4fe",
+                  "inverse-on-surface": "#283044",
+                  "surface-dim": "#0b1326",
+                  "surface-tint": "#00daf3",
+                  "on-secondary-fixed": "#0b1c30",
+                  "outline": "#849396",
+                  "on-primary-container": "#00626e",
+                  "inverse-surface": "#dae2fd",
+                  "primary-container": "#00e5ff",
+                  "tertiary-fixed-dim": "#4edea3",
+                  "on-surface-variant": "#bac9cc",
+                  "on-secondary-fixed-variant": "#38485d",
+                  "primary": "#c3f5ff",
+                  "surface-bright": "#31394d",
+                  "inverse-primary": "#006875",
+                  "error": "#ffb4ab",
+                  "secondary-container": "#3a4a5f",
+                  "on-surface": "#dae2fd",
+                  "on-background": "#dae2fd",
+                  "on-tertiary-fixed-variant": "#005236",
+                  "surface-container-highest": "#2d3449",
+                  "surface-container-lowest": "#060e20",
+                  "on-primary-fixed": "#001f24",
+                  "on-error-container": "#ffdad6",
+                  "secondary-fixed-dim": "#b7c8e1",
+                  "surface-container-high": "#222a3d",
+                  "on-primary": "#00363d",
+                  "tertiary-fixed": "#6ffbbe",
+                  "surface-variant": "#2d3449",
+                  "primary-fixed-dim": "#00daf3"
+          },
+          "borderRadius": {
+                  "DEFAULT": "0.125rem",
+                  "lg": "0.25rem",
+                  "xl": "0.5rem",
+                  "full": "0.75rem"
+          },
+          "spacing": {
+                  "base": "4px",
+                  "gutter": "20px",
+                  "xs": "4px",
+                  "margin-mobile": "16px",
+                  "margin-desktop": "32px",
+                  "sm": "8px",
+                  "md": "16px",
+                  "xl": "40px",
+                  "lg": "24px"
+          },
+          "fontFamily": {
+                  "body-sm": ["Inter"],
+                  "display": ["Geist"],
+                  "headline-lg": ["Geist"],
+                  "headline-md": ["Geist"],
+                  "body-md": ["Inter"],
+                  "body-lg": ["Inter"],
+                  "headline-sm": ["Geist"],
+                  "headline-lg-mobile": ["Geist"],
+                  "label-caps": ["Geist"],
+                  "code-sm": ["JetBrains Mono"]
+          },
+          "fontSize": {
+                  "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                  "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                  "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                  "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                  "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                  "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                  "headline-sm": ["20px", {"lineHeight": "1.4", "fontWeight": "500"}],
+                  "headline-lg-mobile": ["24px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                  "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                  "code-sm": ["13px", {"lineHeight": "1.4", "fontWeight": "400"}]
+          }
+        },
+      },
+    }
+  </script>
+</head>
+<body class="flex items-center justify-center min-h-screen relative">
+<!-- Background Layer -->
+<div class="absolute inset-0 z-0 network-bg" data-alt="A sophisticated, high-tech network graph visualization with glowing nodes and interconnecting lines representing an autonomous agent mesh. The visual style is deep enterprise dark mode with a palette of midnight blue and electric cyan accents. The scene is cinematic with heavy atmospheric blur and soft bokeh lighting effects to create depth and complexity."></div>
+<div class="absolute inset-0 z-10 bg-background/60 backdrop-blur-sm"></div>
+<!-- Auth Portal Container -->
+<main class="relative z-20 w-full max-w-[440px] px-margin-mobile md:px-0">
+<div class="glass-card p-xl flex flex-col items-center">
+<!-- Brand Identity -->
+<div class="mb-xl text-center">
+<h1 class="font-display text-headline-md font-bold text-primary tracking-tight mb-xs">Omium</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">Enterprise Auth Portal</p>
+</div>
+<!-- Login Form -->
+<form class="w-full space-y-lg">
+<div class="space-y-sm">
+<label class="font-label-caps text-label-caps text-on-surface-variant block ml-xs">Identity Address</label>
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-md top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-primary transition-colors">alternate_email</span>
+<input class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg py-md pl-[48px] pr-md font-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all" placeholder="name@organization.com" type="email"/>
+</div>
+</div>
+<div class="space-y-sm">
+<div class="flex justify-between items-center ml-xs">
+<label class="font-label-caps text-label-caps text-on-surface-variant block">Access Key</label>
+<a class="font-label-caps text-label-caps text-primary hover:underline" href="#">Lost access?</a>
+</div>
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-md top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-primary transition-colors">lock</span>
+<input class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg py-md pl-[48px] pr-md font-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all" placeholder="••••••••••••" type="password"/>
+<span class="material-symbols-outlined absolute right-md top-1/2 -translate-y-1/2 text-on-surface-variant cursor-pointer hover:text-on-surface">visibility</span>
+</div>
+</div>
+<!-- Primary Action -->
+<button class="w-full bg-primary-container text-on-primary-container font-label-caps text-label-caps py-md rounded-lg font-bold tracking-wider hover:bg-primary-fixed transition-colors flex items-center justify-center gap-sm active:scale-[0.98] duration-100" type="submit">
+          INITIATE SESSION
+          <span class="material-symbols-outlined text-[18px]">bolt</span>
+</button>
+</form>
+<!-- Divider -->
+<div class="w-full flex items-center gap-md my-xl">
+<div class="h-[1px] flex-1 bg-outline-variant/30"></div>
+<span class="font-label-caps text-[10px] text-outline uppercase tracking-[0.2em]">Federated Auth</span>
+<div class="h-[1px] flex-1 bg-outline-variant/30"></div>
+</div>
+<!-- SSO Options -->
+<div class="w-full grid grid-cols-2 gap-md">
+<button class="flex items-center justify-center gap-sm bg-surface-container-high/50 border border-outline-variant/20 py-sm rounded-lg font-label-caps text-label-caps text-on-surface hover:bg-surface-container-highest transition-all group">
+<svg class="w-4 h-4 text-on-surface-variant group-hover:text-on-surface" fill="currentColor" viewbox="0 0 24 24">
+<path d="M12.48 10.92v3.28h7.84c-.24 1.84-.908 3.152-1.928 4.176-1.224 1.224-3.136 2.52-6.504 2.52-5.224 0-9.272-4.224-9.272-9.448s4.048-9.448 9.272-9.448c2.824 0 4.928 1.112 6.448 2.568l2.288-2.288C18.672 1.344 15.936 0 12.48 0 5.856 0 0 5.376 0 12s5.856 12 12.48 12c3.552 0 6.24-1.176 8.352-3.352 2.168-2.168 2.856-5.232 2.856-7.704 0-.496-.04-1.024-.128-1.512l-11.088.016z"></path>
+</svg>
+          Google
+        </button>
+<button class="flex items-center justify-center gap-sm bg-surface-container-high/50 border border-outline-variant/20 py-sm rounded-lg font-label-caps text-label-caps text-on-surface hover:bg-surface-container-highest transition-all group">
+<svg class="w-4 h-4 text-on-surface-variant group-hover:text-on-surface" fill="currentColor" viewbox="0 0 24 24">
+<path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"></path>
+</svg>
+          GitHub
+        </button>
+</div>
+<div class="mt-xl text-center space-y-md">
+<p class="font-body-sm text-on-surface-variant">
+          New to the mesh? <a class="text-primary hover:underline" href="#">Request Access</a>
+</p>
+<div class="flex items-center justify-center gap-md opacity-40">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">verified_user</span>
+<span class="font-label-caps text-[10px] text-on-surface-variant tracking-widest">ENCRYPTED AES-256</span>
+</div>
+</div>
+</div>
+</main>
+<!-- Global Footer Branding (Static) -->
+<footer class="absolute bottom-lg left-1/2 -translate-x-1/2 z-20 flex items-center gap-md">
+<div class="flex items-center gap-sm">
+<div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+<span class="font-label-caps text-[10px] text-on-surface-variant uppercase tracking-widest">Network Status: Nominal</span>
+</div>
+<div class="h-3 w-[1px] bg-outline-variant/30"></div>
+<span class="font-label-caps text-[10px] text-on-surface-variant uppercase tracking-widest">v2.4.0-CORE</span>
+</footer>
+</body></html>

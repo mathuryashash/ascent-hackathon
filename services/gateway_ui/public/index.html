@@ -1,13 +1,13 @@
 <!-- Omium | Dashboard Overview -->
 <!DOCTYPE html>
-
-<html class="dark" lang="en"><head>
+<html class="dark" lang="en">
+<head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<title>CHIMERA — Omium Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Geist:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <style>
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -19,6 +19,16 @@
         }
         .pipeline-connector {
             background: linear-gradient(90deg, #00daf3 0%, rgba(0, 218, 243, 0) 100%);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #3b494c;
+            border-radius: 10px;
         }
     </style>
 <script id="tailwind-config">
@@ -123,7 +133,7 @@
 </head>
 <body class="bg-background text-on-background font-body-md overflow-hidden h-screen flex">
 <!-- SideNavBar -->
-<aside class="hidden md:flex flex-col h-full py-lg gap-md bg-surface-container-low/60 backdrop-blur-xl border-r border-outline-variant/20 w-64 z-50">
+<aside class="hidden md:flex flex-col h-full py-lg gap-md bg-surface-container-low/60 backdrop-blur-xl border-r border-outline-variant/20 w-64 z-50 shrink-0">
 <div class="px-md mb-lg">
 <div class="flex items-center gap-sm">
 <div class="w-8 h-8 bg-primary-container rounded flex items-center justify-center">
@@ -140,22 +150,27 @@
 <span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
 <span class="font-label-caps text-label-caps">Dashboard</span>
 </a>
-<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" href="/orchestration.html">
+<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" href="#">
 <span class="material-symbols-outlined" data-icon="memory">memory</span>
 <span class="font-label-caps text-label-caps">Orchestration</span>
 </a>
-<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" href="/observability.html">
+<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" href="#">
 <span class="material-symbols-outlined" data-icon="analytics">analytics</span>
 <span class="font-label-caps text-label-caps">Observability</span>
 </a>
-<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" href="/auth.html">
+<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" href="#">
 <span class="material-symbols-outlined" data-icon="terminal">terminal</span>
 <span class="font-label-caps text-label-caps">System Logs</span>
 </a>
 </nav>
 <div class="px-md my-md">
-<button class="w-full bg-primary-container text-on-primary-container py-sm rounded font-bold font-label-caps text-label-caps hover:brightness-110 transition-all">
-                Deploy Agent
+    <div class="flex items-center gap-xs px-sm py-1 rounded border mb-md" id="ws-badge" style="background:rgba(255,180,171,0.1);border-color:rgba(255,180,171,0.2)">
+      <span class="w-1.5 h-1.5 rounded-full bg-error" id="ws-dot"></span>
+      <span class="font-label-caps text-[10px] text-error uppercase" id="ws-label">CONNECTING</span>
+    </div>
+<button onclick="triggerAttack()" class="w-full bg-error text-on-error py-sm rounded font-bold font-label-caps text-label-caps hover:brightness-110 transition-all flex items-center justify-center gap-sm">
+                <span class="material-symbols-outlined text-sm">bug_report</span>
+                TRIGGER ATTACK
             </button>
 </div>
 <div class="mt-auto px-sm flex flex-col gap-xs">
@@ -174,7 +189,7 @@
 <!-- TopAppBar -->
 <header class="flex justify-between items-center w-full px-margin-desktop h-16 sticky top-0 z-50 bg-surface/40 backdrop-blur-md border-b border-outline-variant/30">
 <div class="flex items-center gap-lg">
-<div class="font-display text-headline-md font-bold text-primary tracking-tight">Omium</div>
+<div class="font-display text-headline-md font-bold text-primary tracking-tight">Omium Dashboard</div>
 <div class="hidden md:flex items-center bg-surface-container-lowest/50 px-md py-xs rounded border border-outline-variant/30 w-96">
 <span class="material-symbols-outlined text-on-surface-variant text-sm" data-icon="search">search</span>
 <input class="bg-transparent border-none focus:ring-0 text-body-sm text-on-surface placeholder:text-outline/50 w-full ml-sm" placeholder="Search entire ecosystem..." type="text"/>
@@ -188,16 +203,15 @@
 <button class="p-xs text-on-surface-variant hover:bg-surface-container-highest/50 transition-colors rounded">
 <span class="material-symbols-outlined" data-icon="settings">settings</span>
 </button>
-<button class="p-xs text-on-surface-variant hover:bg-surface-container-highest/50 transition-colors rounded">
-<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
-</button>
 </div>
 <div class="flex items-center gap-sm">
 <div class="text-right hidden sm:block">
 <div class="font-headline-md text-body-sm text-primary font-semibold">Admin.Core</div>
 <div class="font-body-sm text-[10px] text-on-surface-variant uppercase">Clearance Level 5</div>
 </div>
-<img alt="User avatar" class="w-8 h-8 rounded-full border border-primary/20" data-alt="A professional close-up portrait of a high-tech system administrator in a dark, minimalist office environment. The lighting is cold and cinematic, with subtle blue and cyan highlights reflecting off the glass partitions in the background. The individual has a focused, intelligent expression, embodying a sense of expertise and technical authority. The overall style is clean, corporate modern, and sophisticated dark mode." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxULTQ6cTPd5rlM5nnAzNmopKd0mn9z0dKlZp_fzC0KRFpnpmJ7UXXvHxh0vvUJgJXmi1I_vTE77yvWRRLVm_3zSU2Ub2oD-7jNFawuYnIDR-N4M1Cp_udQL3aArfG1cjyXXYLtOhtHOHEVrHLcqiMUggRVhDLh5GI57B2bPUsmHLahKvZOzieI5DlMjeYlwG7SMnJy4CeB5_bDBd8GRSOByW85aJFWS-UtTua7UgID6dbZmX6_pIJEMAiQOrjLWlZYKaDuxuFhAXY"/>
+<div class="w-8 h-8 rounded-full border border-primary/20 bg-primary/10 flex items-center justify-center">
+    <span class="material-symbols-outlined text-primary text-sm">person</span>
+</div>
 </div>
 </div>
 </header>
@@ -218,255 +232,63 @@
 </div>
 <div class="glass-panel p-md flex flex-col justify-between h-32">
 <div class="flex justify-between items-start">
-<span class="font-label-caps text-on-surface-variant text-[11px] uppercase tracking-wider">Avg. Latency</span>
+<span class="font-label-caps text-on-surface-variant text-[11px] uppercase tracking-wider">Active Threats</span>
+<span class="material-symbols-outlined text-error text-sm" data-icon="security">security</span>
+</div>
+<div class="font-display text-headline-lg text-error" id="stat-active">0</div>
+<div class="flex items-center gap-xs">
+<span class="font-body-sm text-[10px] text-on-surface-variant uppercase">Real-time detection active</span>
+</div>
+</div>
+<div class="glass-panel p-md flex flex-col justify-between h-32">
+<div class="flex justify-between items-start">
+<span class="font-label-caps text-on-surface-variant text-[11px] uppercase tracking-wider">Resolved</span>
+<span class="material-symbols-outlined text-tertiary text-sm" data-icon="verified">verified</span>
+</div>
+<div class="font-display text-headline-lg text-tertiary" id="stat-resolved">0</div>
+<div class="flex items-center gap-xs">
+<div class="w-2 h-2 rounded-full bg-tertiary shadow-[0_0_8px_#a8ffd2]"></div>
+<span class="font-body-sm text-[10px] text-on-surface-variant uppercase">Autonomous patching enabled</span>
+</div>
+</div>
+<div class="glass-panel p-md flex flex-col justify-between h-32">
+<div class="flex justify-between items-start">
+<span class="font-label-caps text-on-surface-variant text-[11px] uppercase tracking-wider">Latency</span>
 <span class="material-symbols-outlined text-primary text-sm" data-icon="query_stats">query_stats</span>
 </div>
 <div class="font-display text-headline-lg text-primary">42<span class="text-headline-sm text-on-surface-variant opacity-60">ms</span></div>
 <div class="flex items-center gap-xs">
-<span class="material-symbols-outlined text-tertiary text-xs" data-icon="trending_down">trending_down</span>
-<span class="font-body-sm text-[10px] text-tertiary">-12% from last hour</span>
-</div>
-</div>
-<div class="glass-panel p-md flex flex-col justify-between h-32">
-<div class="flex justify-between items-start">
-<span class="font-label-caps text-on-surface-variant text-[11px] uppercase tracking-wider">Webhook Success</span>
-<span class="material-symbols-outlined text-primary text-sm" data-icon="webhook">webhook</span>
-</div>
-<div class="font-display text-headline-lg text-primary">100<span class="text-headline-sm text-on-surface-variant opacity-60">%</span></div>
-<div class="flex items-center gap-xs">
-<div class="w-2 h-2 rounded-full bg-tertiary shadow-[0_0_8px_#a8ffd2]"></div>
-<span class="font-body-sm text-[10px] text-on-surface-variant uppercase">All services operational</span>
-</div>
-</div>
-<div class="glass-panel p-md flex flex-col justify-between h-32">
-<div class="flex justify-between items-start">
-<span class="font-label-caps text-on-surface-variant text-[11px] uppercase tracking-wider">Active Tokens</span>
-<span class="material-symbols-outlined text-primary text-sm" data-icon="generating_tokens">generating_tokens</span>
-</div>
-<div class="font-display text-headline-lg text-primary">1.2M<span class="text-headline-sm text-on-surface-variant opacity-60">/h</span></div>
-<div class="flex items-center gap-xs">
-<span class="font-body-sm text-[10px] text-on-surface-variant">Throttling: Off</span>
+<span class="font-body-sm text-[10px] text-on-surface-variant uppercase">Optimal performance</span>
 </div>
 </div>
 </section>
-<!-- Middle Bento Grid -->
-<div class="grid grid-cols-12 gap-gutter">
-<!-- Active Pipelines (7 Columns) -->
-<section class="col-span-12 lg:col-span-8 space-y-md">
-<div class="flex items-center justify-between">
-<div class="flex items-center gap-md">
-<h2 class="font-display text-headline-sm text-primary">Active Pipelines</h2>
-<span class="bg-primary/10 text-primary text-[10px] font-bold px-sm py-px rounded border border-primary/20">04 RUNNING</span>
-</div>
-<button class="text-on-surface-variant font-label-caps text-[11px] hover:text-primary transition-colors flex items-center gap-xs">
-                                VIEW ALL <span class="material-symbols-outlined text-xs" data-icon="arrow_forward">arrow_forward</span>
-</button>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
-<!-- Pipeline Card 1 -->
-<div class="glass-panel p-md space-y-md border-l-2 border-l-primary group cursor-pointer hover:bg-surface-container-high/40 transition-all">
-<div class="flex justify-between items-start">
-<div class="space-y-1">
-<h3 class="font-headline-sm text-body-md text-on-surface">Automated Market Research</h3>
-<p class="font-body-sm text-on-surface-variant text-xs">Real-time sentiment analysis &amp; trend prediction</p>
-</div>
-<span class="material-symbols-outlined text-primary text-sm" data-icon="open_in_new">open_in_new</span>
-</div>
-<div class="flex items-center gap-gutter py-xs">
-<div class="flex -space-x-2">
-<div class="w-6 h-6 rounded-full bg-surface-container-highest border border-outline-variant flex items-center justify-center">
-<span class="material-symbols-outlined text-[12px]" data-icon="psychology">psychology</span>
-</div>
-<div class="w-6 h-6 rounded-full bg-surface-container-highest border border-outline-variant flex items-center justify-center">
-<span class="material-symbols-outlined text-[12px]" data-icon="search">search</span>
-</div>
-<div class="w-6 h-6 rounded-full bg-surface-container-highest border border-outline-variant flex items-center justify-center">
-<span class="material-symbols-outlined text-[12px]" data-icon="analytics">analytics</span>
-</div>
-</div>
-<div class="flex-1 h-[2px] pipeline-connector opacity-40"></div>
-<div class="text-[10px] font-code-sm text-on-surface-variant">v2.4.1</div>
-</div>
-<div class="flex items-center justify-between border-t border-outline-variant/20 pt-md">
-<div class="flex items-center gap-xs">
-<div class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
-<span class="text-[10px] font-label-caps text-on-surface-variant uppercase">98% confidence</span>
-</div>
-<span class="text-[10px] font-label-caps text-on-surface-variant uppercase">340 ops/min</span>
-</div>
-</div>
-<!-- Pipeline Card 2 -->
-<div class="glass-panel p-md space-y-md border-l-2 border-l-tertiary-fixed-dim group cursor-pointer hover:bg-surface-container-high/40 transition-all">
-<div class="flex justify-between items-start">
-<div class="space-y-1">
-<h3 class="font-headline-sm text-body-md text-on-surface">24/7 Security Audit</h3>
-<p class="font-body-sm text-on-surface-variant text-xs">Penetration testing &amp; vulnerability mapping</p>
-</div>
-<span class="material-symbols-outlined text-tertiary text-sm" data-icon="security">security</span>
-</div>
-<div class="flex items-center gap-gutter py-xs">
-<div class="flex -space-x-2">
-<div class="w-6 h-6 rounded-full bg-surface-container-highest border border-outline-variant flex items-center justify-center">
-<span class="material-symbols-outlined text-[12px]" data-icon="shield">shield</span>
-</div>
-<div class="w-6 h-6 rounded-full bg-surface-container-highest border border-outline-variant flex items-center justify-center">
-<span class="material-symbols-outlined text-[12px]" data-icon="gpp_maybe">gpp_maybe</span>
-</div>
-</div>
-<div class="flex-1 h-[2px] pipeline-connector opacity-40"></div>
-<div class="text-[10px] font-code-sm text-on-surface-variant">v1.1.0</div>
-</div>
-<div class="flex items-center justify-between border-t border-outline-variant/20 pt-md">
-<div class="flex items-center gap-xs">
-<div class="w-1.5 h-1.5 rounded-full bg-tertiary"></div>
-<span class="text-[10px] font-label-caps text-on-surface-variant uppercase">Secured</span>
-</div>
-<span class="text-[10px] font-label-caps text-on-surface-variant uppercase">1.2k scans/hr</span>
-</div>
-</div>
-<!-- Pipeline Card 3 -->
-<div class="glass-panel p-md space-y-md border-l-2 border-l-primary group cursor-pointer hover:bg-surface-container-high/40 transition-all">
-<div class="flex justify-between items-start">
-<div class="space-y-1">
-<h3 class="font-headline-sm text-body-md text-on-surface">Supply Chain Optimization</h3>
-<p class="font-body-sm text-on-surface-variant text-xs">Logistic rerouting &amp; inventory balancing</p>
-</div>
-<span class="material-symbols-outlined text-primary text-sm" data-icon="precision_manufacturing">precision_manufacturing</span>
-</div>
-<div class="flex items-center gap-gutter py-xs">
-<div class="flex -space-x-2">
-<div class="w-6 h-6 rounded-full bg-surface-container-highest border border-outline-variant flex items-center justify-center">
-<span class="material-symbols-outlined text-[12px]" data-icon="inventory_2">inventory_2</span>
-</div>
-<div class="w-6 h-6 rounded-full bg-surface-container-highest border border-outline-variant flex items-center justify-center">
-<span class="material-symbols-outlined text-[12px]" data-icon="local_shipping">local_shipping</span>
-</div>
-</div>
-<div class="flex-1 h-[2px] pipeline-connector opacity-40"></div>
-<div class="text-[10px] font-code-sm text-on-surface-variant">v0.9.8-beta</div>
-</div>
-<div class="flex items-center justify-between border-t border-outline-variant/20 pt-md">
-<div class="flex items-center gap-xs">
-<div class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
-<span class="text-[10px] font-label-caps text-on-surface-variant uppercase">Optimizing</span>
-</div>
-<span class="text-[10px] font-label-caps text-on-surface-variant uppercase">Active Node</span>
-</div>
-</div>
-<!-- Pipeline Card 4 -->
-<div class="glass-panel p-md space-y-md border-l-2 border-l-outline-variant group cursor-pointer hover:bg-surface-container-high/40 transition-all">
-<div class="flex justify-between items-start">
-<div class="space-y-1">
-<h3 class="font-headline-sm text-body-md text-on-surface">Data Cleanse Alpha</h3>
-<p class="font-body-sm text-on-surface-variant text-xs">Autonomous ETL &amp; anomaly detection</p>
-</div>
-<span class="material-symbols-outlined text-on-surface-variant text-sm" data-icon="auto_fix_high">auto_fix_high</span>
-</div>
-<div class="flex items-center gap-gutter py-xs">
-<div class="flex -space-x-2">
-<div class="w-6 h-6 rounded-full bg-surface-container-highest border border-outline-variant flex items-center justify-center">
-<span class="material-symbols-outlined text-[12px]" data-icon="database">database</span>
-</div>
-</div>
-<div class="flex-1 h-[2px] bg-outline-variant/30 opacity-40"></div>
-<div class="text-[10px] font-code-sm text-on-surface-variant">v2.0.0</div>
-</div>
-<div class="flex items-center justify-between border-t border-outline-variant/20 pt-md">
-<div class="flex items-center gap-xs">
-<div class="w-1.5 h-1.5 rounded-full bg-on-surface-variant"></div>
-<span class="text-[10px] font-label-caps text-on-surface-variant uppercase">Standby</span>
-</div>
-<span class="text-[10px] font-label-caps text-on-surface-variant uppercase">0 ops/min</span>
-</div>
-</div>
-</div>
+
+<!-- Active Pipelines Section -->
+<section class="space-y-md">
+    <div class="flex items-center justify-between">
+        <h2 class="font-display text-headline-sm text-primary">Intelligence Pipeline</h2>
+        <span class="font-code-sm text-[11px] text-on-surface-variant" id="clock"></span>
+    </div>
+    <div class="glass-panel overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="border-b border-outline-variant/10">
+                        <th class="text-left p-md font-label-caps text-[10px] text-on-surface-variant uppercase">Trace ID</th>
+                        <th class="text-left p-md font-label-caps text-[10px] text-on-surface-variant uppercase">Status</th>
+                        <th class="text-left p-md font-label-caps text-[10px] text-on-surface-variant uppercase">Phase</th>
+                        <th class="text-center p-md font-label-caps text-[10px] text-on-surface-variant uppercase">Flags</th>
+                    </tr>
+                </thead>
+                <tbody id="runs-tbody">
+                    <tr><td colspan="4" class="p-md text-center text-on-surface-variant font-code-sm text-[11px]">System standby. Awaiting telemetry...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </section>
-<!-- Agent Fleet (5 Columns) -->
-<section class="col-span-12 lg:col-span-4 space-y-md">
-<div class="flex items-center justify-between">
-<h2 class="font-display text-headline-sm text-primary">Agent Fleet</h2>
-<span class="material-symbols-outlined text-on-surface-variant text-sm" data-icon="more_vert">more_vert</span>
-</div>
-<div class="glass-panel overflow-hidden">
-<div class="p-md space-y-md">
-<!-- Agent Item 1 -->
-<div class="flex items-center gap-md py-sm border-b border-outline-variant/10">
-<div class="w-10 h-10 rounded bg-primary/10 flex items-center justify-center relative">
-<span class="material-symbols-outlined text-primary" data-icon="smart_toy">smart_toy</span>
-<div class="absolute -bottom-1 -right-1 w-3 h-3 bg-tertiary rounded-full border-2 border-background"></div>
-</div>
-<div class="flex-1">
-<div class="flex justify-between">
-<span class="font-body-sm font-semibold text-on-surface">Alpha-9 Observer</span>
-<span class="text-[10px] font-label-caps text-tertiary uppercase">Active</span>
-</div>
-<div class="font-code-sm text-[11px] text-on-surface-variant">Reasoning: Market Trends</div>
-</div>
-</div>
-<!-- Agent Item 2 -->
-<div class="flex items-center gap-md py-sm border-b border-outline-variant/10">
-<div class="w-10 h-10 rounded bg-primary/10 flex items-center justify-center relative">
-<span class="material-symbols-outlined text-primary" data-icon="psychology_alt">psychology_alt</span>
-<div class="absolute -bottom-1 -right-1 w-3 h-3 bg-primary rounded-full border-2 border-background animate-pulse"></div>
-</div>
-<div class="flex-1">
-<div class="flex justify-between">
-<span class="font-body-sm font-semibold text-on-surface">DeepReason v4</span>
-<span class="text-[10px] font-label-caps text-primary uppercase">Reasoning</span>
-</div>
-<div class="font-code-sm text-[11px] text-on-surface-variant">Allocating: 4.2GB VRAM</div>
-</div>
-</div>
-<!-- Agent Item 3 -->
-<div class="flex items-center gap-md py-sm border-b border-outline-variant/10">
-<div class="w-10 h-10 rounded bg-surface-container-highest flex items-center justify-center relative">
-<span class="material-symbols-outlined text-on-surface-variant" data-icon="robot_2">robot_2</span>
-<div class="absolute -bottom-1 -right-1 w-3 h-3 bg-outline-variant rounded-full border-2 border-background"></div>
-</div>
-<div class="flex-1">
-<div class="flex justify-between">
-<span class="font-body-sm font-semibold text-on-surface">LogicGate 02</span>
-<span class="text-[10px] font-label-caps text-on-surface-variant uppercase">Idle</span>
-</div>
-<div class="font-code-sm text-[11px] text-on-surface-variant">Last task: 14m ago</div>
-</div>
-</div>
-<!-- Agent Item 4 -->
-<div class="flex items-center gap-md py-sm border-b border-outline-variant/10">
-<div class="w-10 h-10 rounded bg-error-container/20 flex items-center justify-center relative">
-<span class="material-symbols-outlined text-error" data-icon="dangerous">dangerous</span>
-<div class="absolute -bottom-1 -right-1 w-3 h-3 bg-error rounded-full border-2 border-background"></div>
-</div>
-<div class="flex-1">
-<div class="flex justify-between">
-<span class="font-body-sm font-semibold text-error">SecurityNode X</span>
-<span class="text-[10px] font-label-caps text-error uppercase">Error</span>
-</div>
-<div class="font-code-sm text-[11px] text-on-error-container">Auth Failure [Code: 401]</div>
-</div>
-</div>
-<!-- Agent Item 5 -->
-<div class="flex items-center gap-md py-sm">
-<div class="w-10 h-10 rounded bg-primary/10 flex items-center justify-center relative">
-<span class="material-symbols-outlined text-primary" data-icon="cognition">cognition</span>
-<div class="absolute -bottom-1 -right-1 w-3 h-3 bg-tertiary rounded-full border-2 border-background"></div>
-</div>
-<div class="flex-1">
-<div class="flex justify-between">
-<span class="font-body-sm font-semibold text-on-surface">FleetManager Core</span>
-<span class="text-[10px] font-label-caps text-tertiary uppercase">Active</span>
-</div>
-<div class="font-code-sm text-[11px] text-on-surface-variant">Scaling: 12 sub-agents</div>
-</div>
-</div>
-</div>
-<div class="bg-surface-container-high/50 p-md flex items-center justify-center">
-<button class="text-primary font-label-caps text-[11px] font-bold hover:underline">RESTART ALL AGENTS</button>
-</div>
-</div>
-</section>
-</div>
-<!-- Footer System Logs / Bottom Section -->
+
+<!-- Global Activity Stream -->
 <section class="glass-panel p-md space-y-md">
 <div class="flex items-center justify-between border-b border-outline-variant/20 pb-sm">
 <div class="flex items-center gap-md">
@@ -474,66 +296,252 @@
 <h2 class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">Global Activity Stream</h2>
 </div>
 <div class="flex gap-md text-[10px] font-code-sm">
-<span class="text-tertiary">[INFO] 240 active</span>
-<span class="text-error">[WARN] 2 triggered</span>
+<span class="text-tertiary">[INFO] Streaming Live</span>
+<span class="text-primary" id="svc-status">ORCHESTRATOR: ONLINE</span>
 </div>
 </div>
-<div class="space-y-sm font-code-sm text-[12px] h-32 overflow-y-auto custom-scrollbar" id="log-container">
+<div class="space-y-sm font-code-sm text-[12px] h-48 overflow-y-auto custom-scrollbar p-sm bg-surface-container-highest/20 rounded" id="log-container">
 <!-- Logs will be appended here by websocket -->
+<div class="flex gap-md text-outline/40">
+    <span>[SYSTEM]</span>
+    <span class="text-on-surface-variant">Omium Intelligence Core initialized. Awaiting SIEM payload...</span>
+</div>
 </div>
 </section>
+
+<!-- Approval Overlay (Hidden by default) -->
+<div id="approval-banner" class="hidden glass-panel p-md border-primary/30 bg-primary/5 mt-md rounded-xl animate-pulse">
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-md">
+            <span class="material-symbols-outlined text-primary text-2xl">security_update_good</span>
+            <div>
+                <h3 class="text-primary font-bold">Manual Intervention Required</h3>
+                <p class="text-on-surface-variant text-xs" id="approval-trace-text">Architect has generated a candidate patch. Awaiting review.</p>
+            </div>
+        </div>
+        <button onclick="openApproval()" class="bg-primary text-on-primary px-lg py-sm rounded font-bold font-label-caps text-xs">REVIEW PATCH</button>
+    </div>
+</div>
+
 </div>
 </main>
 </div>
-<script>
-    // Add real-time log functionality
-    document.addEventListener('DOMContentLoaded', () => {
-        const logContainer = document.getElementById('log-container');
-        if (!logContainer) return;
-        
-        // Setup mock socket stream
-        // In reality this would connect to ws://localhost:3000/ws
-        
-        function appendLog(time, source, sourceClass, text, textClass = 'text-on-surface-variant') {
-            const div = document.createElement('div');
-            div.className = 'flex gap-md';
-            div.innerHTML = `
-                <span class="text-outline/40">${time}</span>
-                <span class="${sourceClass}">[${source}]</span>
-                <span class="${textClass}">${text}</span>
-            `;
-            logContainer.appendChild(div);
-            logContainer.scrollTop = logContainer.scrollHeight;
-        }
 
-        // Add some initial logs
-        const now = new Date();
-        const timeStr = () => now.toLocaleTimeString('en-US', { hour12: false });
-        
-        appendLog(timeStr(), 'System', 'text-primary', 'Allocating additional GPU clusters for "DeepReason v4" reasoning cycle.');
-        
-        // If we are connecting to our local backend, connect:
+<!-- Modal for Patch Review -->
+<div id="approval-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-md" style="background:rgba(6,14,32,0.9); backdrop-filter: blur(8px);">
+    <div class="glass-panel w-full max-w-3xl rounded-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div class="p-lg border-b border-outline-variant/20 flex justify-between items-center">
+            <h2 class="text-primary font-display text-xl">Remediation Approval — <span id="modal-trace-id" class="font-mono"></span></h2>
+            <button onclick="closeModal()" class="text-on-surface-variant hover:text-on-surface transition-colors">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <div class="p-lg overflow-y-auto space-y-md">
+            <div class="space-y-sm">
+                <label class="font-label-caps text-[10px] text-on-surface-variant uppercase">Proposed Fix</label>
+                <pre id="modal-patch" class="bg-black/40 p-md rounded border border-outline-variant/30 text-primary font-code-sm text-xs overflow-x-auto"></pre>
+            </div>
+            <div id="modal-flag-section" class="hidden p-md bg-tertiary/10 border border-tertiary/30 rounded">
+                <label class="font-label-caps text-[10px] text-tertiary uppercase">Evidence: Captured Flag</label>
+                <p id="modal-flag" class="text-tertiary font-code-sm mt-1"></p>
+            </div>
+        </div>
+        <div class="p-lg border-t border-outline-variant/20 flex gap-md">
+            <button onclick="approvePatch()" class="flex-1 bg-tertiary text-on-tertiary py-sm rounded font-bold font-label-caps hover:brightness-110">APPROVE & DEPLOY</button>
+            <button onclick="rejectPatch()" class="flex-1 bg-error/20 text-error border border-error/30 py-sm rounded font-bold font-label-caps hover:bg-error/30">REJECT</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const WS_URL = 'ws://localhost:8000/ws';
+let ws = null;
+let runs = {};
+let pendingApprovalTrace = null;
+
+// Clock
+setInterval(() => {
+    const el = document.getElementById('clock');
+    if (el) el.textContent = new Date().toLocaleTimeString('en-US', {hour12:false});
+}, 1000);
+
+function connectWS() {
+    try {
+        ws = new WebSocket(WS_URL);
+    } catch(e) {
+        scheduleWSReconnect();
+        return;
+    }
+    
+    ws.onopen = () => setWSStatus('connected');
+    ws.onclose = () => { setWSStatus('offline'); scheduleWSReconnect(); };
+    ws.onerror = () => setWSStatus('error');
+    
+    ws.onmessage = (e) => {
         try {
-            const ws = new WebSocket('ws://' + window.location.host + '/ws');
-            ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                const t = new Date().toLocaleTimeString('en-US', { hour12: false });
-                
-                if (data.type === 'system') {
-                    appendLog(t, 'System', 'text-primary', data.content);
-                } else if (data.type === 'thought') {
-                    appendLog(t, 'AI-Reasoning', 'text-secondary', data.content);
-                } else if (data.type === 'tool_call') {
-                    appendLog(t, 'Tool', 'text-tertiary', 'Running: ' + data.tool + ' - ' + data.content);
-                } else if (data.type === 'tool_result') {
-                    appendLog(t, 'Result', 'text-tertiary', data.content);
-                } else {
-                    appendLog(t, 'Log', 'text-outline/50', JSON.stringify(data));
-                }
-            };
-        } catch (e) {
-            console.error('WebSocket connection failed', e);
+            const msg = JSON.parse(e.data);
+            handleWSMessage(msg);
+        } catch(err) {
+            console.error('Failed to parse WS message', err);
         }
-    });
+    };
+}
+
+function setWSStatus(s) {
+    const dot = document.getElementById('ws-dot');
+    const lbl = document.getElementById('ws-label');
+    const badge = document.getElementById('ws-badge');
+    if (s === 'connected') {
+        dot.style.background = '#a8ffd2'; lbl.textContent = 'LIVE'; lbl.style.color = '#a8ffd2';
+        badge.style.background = 'rgba(168,255,210,0.1)'; badge.style.borderColor = 'rgba(168,255,210,0.2)';
+    } else {
+        dot.style.background = '#ffb4ab'; lbl.textContent = 'OFFLINE'; lbl.style.color = '#ffb4ab';
+        badge.style.background = 'rgba(255,180,171,0.1)'; badge.style.borderColor = 'rgba(255,180,171,0.2)';
+    }
+}
+
+function scheduleWSReconnect() { setTimeout(connectWS, 3000); }
+
+function handleWSMessage(msg) {
+    const { trace_id, type, content, status, node } = msg;
+    
+    // Add to activity stream
+    appendLog(trace_id, type, content || status || node);
+    
+    // Update Runs Table
+    if (trace_id) {
+        updateRunState(trace_id, msg);
+    }
+    
+    // Handle Awaiting Approval
+    if (status === 'awaiting_approval' || node === 'architect') {
+        pendingApprovalTrace = trace_id;
+        showApprovalBanner(trace_id);
+    }
+}
+
+function appendLog(trace, type, content) {
+    const container = document.getElementById('log-container');
+    const div = document.createElement('div');
+    div.className = 'flex gap-md py-px border-b border-outline-variant/5';
+    
+    const time = new Date().toLocaleTimeString('en-US', {hour12:false});
+    const typeColor = {
+        'thought': 'text-secondary',
+        'tool': 'text-tertiary',
+        'system': 'text-primary',
+        'error': 'text-error'
+    }[type] || 'text-on-surface-variant';
+
+    div.innerHTML = `
+        <span class="text-outline/40 shrink-0">[${time}]</span>
+        <span class="font-bold text-outline/20 shrink-0">${trace ? trace.slice(0,8) : 'CORE'}</span>
+        <span class="${typeColor} uppercase text-[10px] font-bold shrink-0">[${type || 'LOG'}]</span>
+        <span class="text-on-surface-variant truncate">${content}</span>
+    `;
+    
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+}
+
+function updateRunState(id, data) {
+    if (!runs[id]) {
+        runs[id] = { id, status: 'Active', phase: 'Starting', flags: 0 };
+    }
+    
+    if (data.status) runs[id].status = data.status;
+    if (data.node) runs[id].phase = data.node;
+    if (data.type === 'flag') runs[id].flags++;
+    
+    renderRuns();
+    updateStats();
+}
+
+function renderRuns() {
+    const tbody = document.getElementById('runs-tbody');
+    tbody.innerHTML = Object.values(runs).map(run => `
+        <tr class="border-b border-outline-variant/5 hover:bg-surface-container-high/20 transition-colors">
+            <td class="p-md font-mono text-[11px] text-primary">${run.id.slice(0,12)}...</td>
+            <td class="p-md">
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                    run.status === 'resolved' ? 'bg-tertiary/10 text-tertiary' :
+                    run.status === 'failed' ? 'bg-error/10 text-error' :
+                    'bg-primary/10 text-primary animate-pulse'
+                }">${run.status}</span>
+            </td>
+            <td class="p-md text-[11px] text-on-surface-variant uppercase">${run.phase}</td>
+            <td class="p-md text-center text-primary font-bold">${run.flags}</td>
+        </tr>
+    `).join('') || '<tr><td colspan="4" class="p-md text-center text-on-surface-variant font-code-sm text-[11px]">No active intelligence runs.</td></tr>';
+}
+
+function updateStats() {
+    const list = Object.values(runs);
+    document.getElementById('stat-active').textContent = list.filter(r => r.status !== 'resolved' && r.status !== 'failed').length;
+    document.getElementById('stat-resolved').textContent = list.filter(r => r.status === 'resolved').length;
+}
+
+async function triggerAttack() {
+    appendLog(null, 'system', 'Manual attack trigger initiated...');
+    try {
+        const resp = await fetch('/api/trigger', { method: 'POST' });
+        const data = await resp.json();
+        if (data.trace_id) {
+            appendLog(data.trace_id, 'system', 'Attack telemetry ingested. Orchestrator engaged.');
+        }
+    } catch(e) {
+        appendLog(null, 'error', 'Failed to reach gateway: ' + e.message);
+    }
+}
+
+function showApprovalBanner(id) {
+    document.getElementById('approval-banner').classList.remove('hidden');
+    document.getElementById('approval-trace-text').textContent = `Architect Agent has proposed a patch for trace ${id.slice(0,8)}.`;
+}
+
+async function openApproval() {
+    if (!pendingApprovalTrace) return;
+    const id = pendingApprovalTrace;
+    document.getElementById('modal-trace-id').textContent = id;
+    document.getElementById('approval-modal').classList.remove('hidden');
+    
+    // Fetch state from orchestrator (mocking fetch for now as SSE proxy not fully wired)
+    // In a real scenario, we'd GET /api/status/:id
+    document.getElementById('modal-patch').textContent = "--- app.py\n+++ app.py\n@@ -20,1 +20,1 @@\n- cursor.execute(\"SELECT * FROM users WHERE id = '\" + id + \"'\")\n+ cursor.execute(\"SELECT * FROM users WHERE id = %s\", (id,))";
+}
+
+function closeModal() {
+    document.getElementById('approval-modal').classList.add('hidden');
+}
+
+async function approvePatch() {
+    const id = pendingApprovalTrace;
+    try {
+        await fetch(`/api/approve/${id}`, { method: 'POST' });
+        appendLog(id, 'system', 'Patch approved by administrator. Deploying to production nodes...');
+        closeModal();
+        document.getElementById('approval-banner').classList.add('hidden');
+        pendingApprovalTrace = null;
+    } catch(e) {
+        alert('Failed to approve: ' + e.message);
+    }
+}
+
+async function rejectPatch() {
+    const id = pendingApprovalTrace;
+    try {
+        await fetch(`/api/reject/${id}`, { method: 'POST' });
+        appendLog(id, 'system', 'Patch rejected. Re-routing to Red Team for alternative exploit path analysis.');
+        closeModal();
+        document.getElementById('approval-banner').classList.add('hidden');
+        pendingApprovalTrace = null;
+    } catch(e) {
+        alert('Failed to reject: ' + e.message);
+    }
+}
+
+// Start
+connectWS();
 </script>
-</body></html>
+</body>
+</html>

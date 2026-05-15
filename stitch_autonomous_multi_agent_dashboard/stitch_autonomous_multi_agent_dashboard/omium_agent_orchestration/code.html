@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Geist:wght@500;600;700&amp;family=JetBrains+Mono:wght@400&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "background": "#0b1326",
+                    "on-secondary": "#213145",
+                    "tertiary-container": "#5be9ad",
+                    "on-primary-fixed-variant": "#004f58",
+                    "on-tertiary-container": "#006645",
+                    "on-tertiary": "#003824",
+                    "on-secondary-container": "#a9bad3",
+                    "secondary": "#b7c8e1",
+                    "on-tertiary-fixed": "#002113",
+                    "tertiary": "#a8ffd2",
+                    "surface-container": "#171f33",
+                    "error-container": "#93000a",
+                    "primary-fixed": "#9cf0ff",
+                    "surface-container-low": "#131b2e",
+                    "on-error": "#690005",
+                    "outline-variant": "#3b494c",
+                    "surface": "#0b1326",
+                    "secondary-fixed": "#d3e4fe",
+                    "inverse-on-surface": "#283044",
+                    "surface-dim": "#0b1326",
+                    "surface-tint": "#00daf3",
+                    "on-secondary-fixed": "#0b1c30",
+                    "outline": "#849396",
+                    "on-primary-container": "#00626e",
+                    "inverse-surface": "#dae2fd",
+                    "primary-container": "#00e5ff",
+                    "tertiary-fixed-dim": "#4edea3",
+                    "on-surface-variant": "#bac9cc",
+                    "on-secondary-fixed-variant": "#38485d",
+                    "primary": "#c3f5ff",
+                    "surface-bright": "#31394d",
+                    "inverse-primary": "#006875",
+                    "error": "#ffb4ab",
+                    "secondary-container": "#3a4a5f",
+                    "on-surface": "#dae2fd",
+                    "on-background": "#dae2fd",
+                    "on-tertiary-fixed-variant": "#005236",
+                    "surface-container-highest": "#2d3449",
+                    "surface-container-lowest": "#060e20",
+                    "on-primary-fixed": "#001f24",
+                    "on-error-container": "#ffdad6",
+                    "secondary-fixed-dim": "#b7c8e1",
+                    "surface-container-high": "#222a3d",
+                    "on-primary": "#00363d",
+                    "tertiary-fixed": "#6ffbbe",
+                    "surface-variant": "#2d3449",
+                    "primary-fixed-dim": "#00daf3"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "base": "4px",
+                    "gutter": "20px",
+                    "xs": "4px",
+                    "margin-mobile": "16px",
+                    "margin-desktop": "32px",
+                    "sm": "8px",
+                    "md": "16px",
+                    "xl": "40px",
+                    "lg": "24px"
+            },
+            "fontFamily": {
+                    "body-sm": ["Inter"],
+                    "display": ["Geist"],
+                    "headline-lg": ["Geist"],
+                    "headline-md": ["Geist"],
+                    "body-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "headline-sm": ["Geist"],
+                    "headline-lg-mobile": ["Geist"],
+                    "label-caps": ["Geist"],
+                    "code-sm": ["JetBrains Mono"]
+            },
+            "fontSize": {
+                    "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "headline-sm": ["20px", {"lineHeight": "1.4", "fontWeight": "500"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                    "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                    "code-sm": ["13px", {"lineHeight": "1.4", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .glass-card {
+        background: rgba(23, 31, 51, 0.4);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .pipeline-line {
+        background: linear-gradient(90deg, #00daf3 0%, rgba(0, 218, 243, 0.2) 100%);
+      }
+      ::-webkit-scrollbar { width: 4px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: #3b494c; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md overflow-hidden h-screen flex flex-col">
+<!-- TopAppBar from JSON -->
+<header class="flex justify-between items-center w-full px-margin-desktop h-16 sticky top-0 z-50 bg-surface/40 backdrop-blur-md border-b border-outline-variant/30">
+<div class="flex items-center gap-lg">
+<span class="font-display text-headline-md font-bold text-primary tracking-tight">Omium</span>
+<div class="hidden md:flex items-center bg-surface-container-lowest border border-outline-variant/30 rounded px-sm py-1.5 w-64 gap-sm">
+<span class="material-symbols-outlined text-outline text-[20px]">search</span>
+<span class="font-body-sm text-on-surface-variant">Search pipelines...</span>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<button class="p-2 hover:bg-surface-container-highest/50 transition-colors rounded text-on-surface-variant Active:scale-95 duration-100">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 hover:bg-surface-container-highest/50 transition-colors rounded text-on-surface-variant Active:scale-95 duration-100">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="p-2 hover:bg-surface-container-highest/50 transition-colors rounded text-on-surface-variant Active:scale-95 duration-100">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-secondary-container overflow-hidden border border-outline-variant/50 ml-sm">
+<img alt="User avatar" data-alt="A high-resolution, professional portrait of a tech executive against a dark, moody background with subtle neon blue highlights. The person has a focused expression, representing precision and leadership. The lighting is low-key, emphasizing a sophisticated corporate aesthetic consistent with a dark-mode enterprise interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDoQtkGT2_N0qnmHxGVUp4wW9juRH-ijMpsUp_xjTVkbgoGTFkdTYLHlq3UHgT9x5IX99Wq25oWPLzue7o-74A2kAhgz7ObWuCf_3qX9yesuKUeoSKs3wYcrc6ZQKQHf7WJZnYxZQ0vtTRi3W_ViqSh7paQ2jxlAedfv1JjmLhhrMXfyXfixeLpqyEtNHam2MjoCNrCSWAsCoWyUup2HqjH1g-jGsOnZB805Dqws0pWsqD0XkYyv4cl5dsmtDl64VCkuLB9KxOrSuE3"/>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- SideNavBar from JSON -->
+<aside class="hidden md:flex flex-col h-full py-lg gap-md bg-surface-container-low/60 backdrop-blur-xl border-r border-outline-variant/20 w-64 shrink-0">
+<div class="px-lg pb-md">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 bg-primary rounded flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-[20px]">hub</span>
+</div>
+<div>
+<div class="font-display text-headline-sm font-bold text-primary">Omium Core</div>
+<div class="font-label-caps text-label-caps text-on-surface-variant">Autonomous v2.4</div>
+</div>
+</div>
+</div>
+<nav class="flex-1 px-sm space-y-1">
+<a class="flex items-center gap-md px-md py-2.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all rounded" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-caps text-label-caps">Dashboard</span>
+</a>
+<a class="flex items-center gap-md px-md py-2.5 text-primary border-r-2 border-primary bg-primary/5 transition-all rounded translate-x-1" href="#">
+<span class="material-symbols-outlined">memory</span>
+<span class="font-label-caps text-label-caps">Orchestration</span>
+</a>
+<a class="flex items-center gap-md px-md py-2.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all rounded" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-label-caps text-label-caps">Observability</span>
+</a>
+<a class="flex items-center gap-md px-md py-2.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all rounded" href="#">
+<span class="material-symbols-outlined">terminal</span>
+<span class="font-label-caps text-label-caps">System Logs</span>
+</a>
+</nav>
+<div class="px-md mt-auto space-y-lg">
+<button class="w-full py-3 bg-primary-container text-on-primary-container font-headline-sm text-sm rounded-lg hover:brightness-110 transition-all flex items-center justify-center gap-sm">
+<span class="material-symbols-outlined text-[18px]">rocket_launch</span>
+                    Deploy Agent
+                </button>
+<div class="space-y-1">
+<a class="flex items-center gap-md px-md py-2 text-on-surface-variant hover:text-on-surface transition-all rounded" href="#">
+<span class="material-symbols-outlined">verified_user</span>
+<span class="font-label-caps text-label-caps">Security</span>
+</a>
+<a class="flex items-center gap-md px-md py-2 text-on-surface-variant hover:text-on-surface transition-all rounded" href="#">
+<span class="material-symbols-outlined">support_agent</span>
+<span class="font-label-caps text-label-caps">Support</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Workspace: Pipeline Flow Designer -->
+<main class="flex-1 relative bg-surface-container-lowest overflow-hidden">
+<!-- Grid Background Overlay -->
+<div class="absolute inset-0 pointer-events-none opacity-5" style="background-image: linear-gradient(#849396 1px, transparent 1px), linear-gradient(90deg, #849396 1px, transparent 1px); background-size: 40px 40px;"></div>
+<!-- Pipeline Header/Controls -->
+<div class="absolute top-md left-lg right-lg flex justify-between items-center z-10">
+<div class="flex flex-col">
+<div class="flex items-center gap-sm">
+<h1 class="font-headline-lg text-headline-lg text-on-surface">DataHarvest_V2</h1>
+<span class="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-label-caps text-[10px] flex items-center gap-1 border border-primary/20">
+<span class="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></span>
+                            ACTIVE
+                        </span>
+</div>
+<p class="font-body-sm text-on-surface-variant">Multi-Agent Market Intelligence Pipeline • Updated 2m ago</p>
+</div>
+<div class="flex items-center gap-md">
+<div class="glass-card px-md py-sm flex items-center gap-lg">
+<div class="flex flex-col">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Latency</span>
+<span class="font-code-sm text-primary">124ms</span>
+</div>
+<div class="w-px h-8 bg-outline-variant/30"></div>
+<div class="flex flex-col">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Tokens/Min</span>
+<span class="font-code-sm text-primary">48.2k</span>
+</div>
+</div>
+<button class="bg-primary text-on-primary font-headline-sm text-sm px-lg py-2.5 rounded flex items-center gap-sm hover:brightness-110 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[20px]">cloud_upload</span>
+                        Deploy Pipeline
+                    </button>
+</div>
+</div>
+<!-- Flow Designer Canvas -->
+<div class="w-full h-full flex items-center justify-center p-xl">
+<div class="relative w-full max-w-5xl h-full flex items-center">
+<!-- SVG Connections (Conceptual Visual) -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none">
+<path d="M 240 300 L 440 200" fill="none" stroke="url(#gradient-line)" stroke-width="2"></path>
+<path d="M 240 300 L 440 400" fill="none" stroke="url(#gradient-line)" stroke-width="2"></path>
+<path d="M 640 200 L 840 300" fill="none" stroke="url(#gradient-line)" stroke-width="2"></path>
+<path d="M 640 400 L 840 300" fill="none" stroke="url(#gradient-line)" stroke-width="2"></path>
+<defs>
+<lineargradient id="gradient-line" x1="0%" x2="100%" y1="0%" y2="0%">
+<stop offset="0%" stop-color="#00daf3"></stop>
+<stop offset="100%" stop-color="#00626e"></stop>
+</lineargradient>
+</defs>
+</svg>
+<!-- Nodes -->
+<!-- Node 1: Input -->
+<div class="absolute left-0 top-1/2 -translate-y-1/2 glass-card w-60 p-md rounded-xl">
+<div class="flex items-center justify-between mb-md">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary">webhook</span>
+<span class="font-headline-sm text-sm">Source Webhook</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[16px]">more_vert</span>
+</div>
+<div class="bg-surface-container-lowest p-sm rounded border border-outline-variant/20 mb-sm">
+<span class="font-code-sm text-[11px] text-tertiary">GET /market/v2/stream</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Status</span>
+<span class="font-label-caps text-label-caps text-tertiary">Streaming</span>
+</div>
+</div>
+<!-- Node 2: SearchAgent -->
+<div class="absolute left-1/3 top-[20%] glass-card w-64 p-md rounded-xl border-primary/40">
+<div class="flex items-center justify-between mb-md">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: 'FILL' 1;">travel_explore</span>
+<span class="font-headline-sm text-sm">SearchAgent</span>
+</div>
+<span class="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_#00daf3]"></span>
+</div>
+<p class="font-body-sm text-on-surface-variant mb-md">Real-time retrieval from web sources and internal docs.</p>
+<div class="space-y-sm">
+<div class="flex justify-between items-center text-[12px]">
+<span class="text-on-surface-variant">Temperature</span>
+<span class="font-code-sm text-primary">0.2</span>
+</div>
+<div class="w-full bg-surface-container-highest h-1 rounded-full">
+<div class="bg-primary w-[20%] h-full rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Node 3: ReasoningAgent -->
+<div class="absolute left-1/3 bottom-[20%] glass-card w-64 p-md rounded-xl">
+<div class="flex items-center justify-between mb-md">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">psychology</span>
+<span class="font-headline-sm text-sm">ReasoningAgent</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[16px]">pause</span>
+</div>
+<p class="font-body-sm text-on-surface-variant mb-md">Chain-of-thought analysis on retrieved search results.</p>
+<div class="flex gap-xs">
+<span class="px-2 py-0.5 bg-surface-container-highest rounded font-code-sm text-[10px]">COT_STRICT</span>
+<span class="px-2 py-0.5 bg-surface-container-highest rounded font-code-sm text-[10px]">GPT-4o</span>
+</div>
+</div>
+<!-- Node 4: ActionAgent -->
+<div class="absolute right-0 top-1/2 -translate-y-1/2 glass-card w-64 p-md rounded-xl">
+<div class="flex items-center justify-between mb-md">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-tertiary-container" style="font-variation-settings: 'FILL' 1;">bolt</span>
+<span class="font-headline-sm text-sm">ActionAgent</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[16px]">settings</span>
+</div>
+<div class="space-y-sm">
+<div class="flex items-center gap-sm text-[12px] text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px]">link</span>
+                                POST /slack/reports
+                            </div>
+<div class="flex items-center gap-sm text-[12px] text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px]">link</span>
+                                UPDATE postgres.summary
+                            </div>
+</div>
+</div>
+</div>
+</div>
+<!-- Visual Flow Controls (Mini-map & Zoom) -->
+<div class="absolute bottom-md left-lg flex items-center gap-sm">
+<div class="glass-card flex items-center p-1 rounded-lg">
+<button class="p-2 hover:bg-surface-container-highest rounded"><span class="material-symbols-outlined">add</span></button>
+<div class="w-px h-4 bg-outline-variant mx-1"></div>
+<span class="px-2 font-code-sm text-xs text-on-surface-variant">85%</span>
+<div class="w-px h-4 bg-outline-variant mx-1"></div>
+<button class="p-2 hover:bg-surface-container-highest rounded"><span class="material-symbols-outlined">remove</span></button>
+</div>
+<button class="glass-card p-2 rounded-lg hover:bg-surface-container-highest"><span class="material-symbols-outlined">fit_screen</span></button>
+</div>
+</main>
+<!-- Sidebar Panel: Agent DNA -->
+<aside class="hidden lg:flex flex-col w-96 bg-surface-container border-l border-outline-variant/30 overflow-y-auto">
+<div class="p-lg border-b border-outline-variant/20">
+<div class="flex items-center justify-between mb-sm">
+<h2 class="font-headline-sm text-on-surface">Agent DNA Configuration</h2>
+<button class="text-primary font-label-caps text-label-caps">Reset to Default</button>
+</div>
+<p class="font-body-sm text-on-surface-variant">Configure the fine-grained parameters for 'SearchAgent'</p>
+</div>
+<div class="p-lg space-y-xl">
+<!-- DNA Section: Prompts -->
+<div class="space-y-md">
+<label class="font-label-caps text-label-caps text-on-surface-variant flex items-center gap-sm">
+<span class="material-symbols-outlined text-[16px]">subject</span>
+                        System Persona Prompt
+                    </label>
+<textarea class="w-full h-40 bg-surface-container-lowest border border-outline-variant/50 rounded-lg p-md font-code-sm text-primary focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none" placeholder="Enter system instructions...">You are a high-precision search specialist. Extract primary entities and financial data from the provided web streams. Focus on fiscal year 2024 projections. Maintain professional neutrality and cite sources for every factual claim.</textarea>
+</div>
+<!-- DNA Section: Tools -->
+<div class="space-y-md">
+<label class="font-label-caps text-label-caps text-on-surface-variant flex items-center gap-sm">
+<span class="material-symbols-outlined text-[16px]">handyman</span>
+                        Tool &amp; Capability Access
+                    </label>
+<div class="space-y-sm">
+<div class="flex items-center justify-between p-sm glass-card rounded hover:bg-surface-container-highest cursor-pointer transition-colors">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-[18px]">public</span>
+<span class="font-body-sm">Web Search (Tavily)</span>
+</div>
+<div class="w-8 h-4 bg-primary rounded-full relative">
+<div class="absolute right-0.5 top-0.5 w-3 h-3 bg-on-primary rounded-full"></div>
+</div>
+</div>
+<div class="flex items-center justify-between p-sm glass-card rounded hover:bg-surface-container-highest cursor-pointer transition-colors">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-[18px]">database</span>
+<span class="font-body-sm">Vector DB (Pinecone)</span>
+</div>
+<div class="w-8 h-4 bg-primary rounded-full relative">
+<div class="absolute right-0.5 top-0.5 w-3 h-3 bg-on-primary rounded-full"></div>
+</div>
+</div>
+<div class="flex items-center justify-between p-sm glass-card rounded opacity-50 cursor-not-allowed">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-[18px]">code</span>
+<span class="font-body-sm">Python Sandbox</span>
+</div>
+<div class="w-8 h-4 bg-outline-variant rounded-full relative">
+<div class="absolute left-0.5 top-0.5 w-3 h-3 bg-surface rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- DNA Section: Depth -->
+<div class="space-y-md">
+<div class="flex items-center justify-between">
+<label class="font-label-caps text-label-caps text-on-surface-variant flex items-center gap-sm">
+<span class="material-symbols-outlined text-[16px]">schema</span>
+                            Reasoning Depth
+                        </label>
+<span class="font-code-sm text-primary text-[11px]">Iterative (3x)</span>
+</div>
+<input class="w-full accent-primary h-1 bg-surface-container-lowest rounded-full appearance-none" type="range"/>
+<div class="flex justify-between font-label-caps text-[10px] text-on-surface-variant">
+<span>Fast / Reactive</span>
+<span>Balanced</span>
+<span>Deep / Analytical</span>
+</div>
+</div>
+<!-- Footer Summary Card -->
+<div class="p-md bg-primary/5 border border-primary/20 rounded-xl space-y-sm">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary text-[18px]">info</span>
+<span class="font-headline-sm text-xs">Cost Estimation</span>
+</div>
+<p class="font-body-sm text-[12px] text-on-surface-variant">Estimated cost per run: <span class="text-on-surface font-semibold">$0.042</span>. Higher reasoning depth may increase this by 15%.</p>
+</div>
+</div>
+<div class="mt-auto p-lg border-t border-outline-variant/20 sticky bottom-0 bg-surface-container">
+<button class="w-full py-3 bg-on-surface text-surface font-headline-sm text-sm rounded-lg hover:brightness-110 active:scale-95 transition-all">
+                    Save Configuration
+                </button>
+</div>
+</aside>
+</div>
+</body></html>

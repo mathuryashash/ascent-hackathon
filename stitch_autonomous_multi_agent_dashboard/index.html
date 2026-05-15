@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CHIMERA — Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist:wght@500;600;700&family=JetBrains+Mono:wght@400&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+tailwind.config = {
+  darkMode:"class",
+  theme:{extend:{
+    colors:{"background":"#0b1326","on-secondary":"#213145","tertiary-container":"#5be9ad","on-primary-fixed-variant":"#004f58","on-tertiary-container":"#006645","on-tertiary":"#003824","on-secondary-container":"#a9bad3","secondary":"#b7c8e1","on-tertiary-fixed":"#002113","tertiary":"#a8ffd2","surface-container":"#171f33","error-container":"#93000a","primary-fixed":"#9cf0ff","surface-container-low":"#131b2e","on-error":"#690005","outline-variant":"#3b494c","surface":"#0b1326","secondary-fixed":"#d3e4fe","inverse-on-surface":"#283044","surface-dim":"#0b1326","surface-tint":"#00daf3","on-secondary-fixed":"#0b1c30","outline":"#849396","on-primary-container":"#00626e","inverse-surface":"#dae2fd","primary-container":"#00e5ff","tertiary-fixed-dim":"#4edea3","on-surface-variant":"#bac9cc","on-secondary-fixed-variant":"#38485d","primary":"#c3f5ff","surface-bright":"#31394d","inverse-primary":"#006875","error":"#ffb4ab","secondary-container":"#3a4a5f","on-surface":"#dae2fd","on-background":"#dae2fd","on-tertiary-fixed-variant":"#005236","surface-container-highest":"#2d3449","surface-container-lowest":"#060e20","on-primary-fixed":"#001f24","on-error-container":"#ffdad6","secondary-fixed-dim":"#b7c8e1","surface-container-high":"#222a3d","on-primary":"#00363d","tertiary-fixed":"#6ffbbe","surface-variant":"#2d3449","primary-fixed-dim":"#00daf3"},
+    borderRadius:{"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"},
+    spacing:{"base":"4px","gutter":"20px","xs":"4px","margin-mobile":"16px","margin-desktop":"32px","sm":"8px","md":"16px","xl":"40px","lg":"24px"},
+    fontFamily:{"body-sm":["Inter"],"display":["Geist"],"headline-lg":["Geist"],"headline-md":["Geist"],"body-md":["Inter"],"body-lg":["Inter"],"headline-sm":["Geist"],"headline-lg-mobile":["Geist"],"label-caps":["Geist"],"code-sm":["JetBrains Mono"]},
+    fontSize:{"body-sm":["14px",{"lineHeight":"1.5","fontWeight":"400"}],"display":["48px",{"lineHeight":"1.1","letterSpacing":"-0.02em","fontWeight":"700"}],"headline-lg":["32px",{"lineHeight":"1.2","letterSpacing":"-0.01em","fontWeight":"600"}],"headline-md":["24px",{"lineHeight":"1.3","fontWeight":"600"}],"body-md":["16px",{"lineHeight":"1.6","fontWeight":"400"}],"body-lg":["18px",{"lineHeight":"1.6","fontWeight":"400"}],"headline-sm":["20px",{"lineHeight":"1.4","fontWeight":"500"}],"headline-lg-mobile":["24px",{"lineHeight":"1.2","fontWeight":"600"}],"label-caps":["12px",{"lineHeight":"1","letterSpacing":"0.05em","fontWeight":"700"}],"code-sm":["13px",{"lineHeight":"1.4","fontWeight":"400"}]}
+  }}
+}
+</script>
+<style>
+.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}
+.glass-card{background:rgba(23,31,51,0.4);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.1)}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#3b494c;border-radius:10px}
+</style>
+</head>
+<body class="bg-background text-on-background font-body-md overflow-hidden h-screen flex flex-col">
+
+<header class="flex justify-between items-center w-full px-margin-desktop h-16 sticky top-0 z-50 bg-surface/40 backdrop-blur-md border-b border-outline-variant/30 shrink-0">
+  <div class="flex items-center gap-lg">
+    <div class="flex items-center gap-sm">
+      <span class="font-display text-headline-md font-bold text-primary tracking-tight">CHIMERA</span>
+      <span class="px-2 py-0.5 rounded font-label-caps text-label-caps bg-error/10 text-error border border-error/20">THREAT RESPONSE</span>
+    </div>
+  </div>
+  <div class="flex items-center gap-md">
+    <div class="flex items-center gap-xs px-sm py-1 rounded border" id="ws-badge" style="background:rgba(255,180,171,0.1);border-color:rgba(255,180,171,0.2)">
+      <span class="w-1.5 h-1.5 rounded-full bg-error" id="ws-dot"></span>
+      <span class="font-label-caps text-[10px] text-error" id="ws-label">CONNECTING</span>
+    </div>
+    <span class="font-code-sm text-[11px] text-on-surface-variant" id="clock"></span>
+    <button onclick="triggerAttack()" id="trigger-btn" class="bg-error text-on-error font-headline-sm text-sm px-lg py-2 rounded flex items-center gap-sm hover:brightness-110 active:scale-95 transition-all">
+      <span class="material-symbols-outlined text-[18px]">bug_report</span>
+      Trigger SQLi Attack
+    </button>
+  </div>
+</header>
+
+<div class="flex flex-1 overflow-hidden">
+  <aside class="hidden md:flex flex-col h-full py-lg gap-md bg-surface-container-low/60 backdrop-blur-xl border-r border-outline-variant/20 w-56 shrink-0">
+    <div class="px-lg pb-md">
+      <div class="flex items-center gap-sm">
+        <div class="w-8 h-8 bg-error/20 rounded flex items-center justify-center border border-error/30">
+          <span class="material-symbols-outlined text-[20px] text-error">security</span>
+        </div>
+        <div>
+          <div class="font-display text-headline-sm font-bold text-primary">Chimera</div>
+          <div class="font-label-caps text-label-caps text-on-surface-variant">Autonomous SecOps</div>
+        </div>
+      </div>
+    </div>
+    <nav class="flex-1 px-sm space-y-1">
+      <a class="flex items-center gap-md px-md py-2.5 text-primary border-r-2 border-primary bg-primary/5 transition-all rounded translate-x-1" href="index.html">
+        <span class="material-symbols-outlined">dashboard</span>
+        <span class="font-label-caps text-label-caps">Command Center</span>
+      </a>
+      <a class="flex items-center gap-md px-md py-2.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all rounded" href="orchestration.html">
+        <span class="material-symbols-outlined">account_tree</span>
+        <span class="font-label-caps text-label-caps">Pipeline</span>
+      </a>
+      <a class="flex items-center gap-md px-md py-2.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all rounded" href="observability.html">
+        <span class="material-symbols-outlined">analytics</span>
+        <span class="font-label-caps text-label-caps">Metrics</span>
+      </a>
+      <a class="flex items-center gap-md px-md py-2.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all rounded" href="logs.html">
+        <span class="material-symbols-outlined">terminal</span>
+        <span class="font-label-caps text-label-caps">Event Stream</span>
+      </a>
+    </nav>
+    <div class="px-md mt-auto">
+      <div class="glass-card p-sm rounded-xl space-y-sm">
+        <div class="font-label-caps text-[10px] text-on-surface-variant">SERVICES</div>
+        <div class="flex items-center justify-between">
+          <span class="font-body-sm text-[11px] text-on-surface-variant">Orchestrator</span>
+          <span class="w-2 h-2 rounded-full" id="svc-orchestrator" style="background:#3b494c"></span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="font-body-sm text-[11px] text-on-surface-variant">Gateway</span>
+          <span class="w-2 h-2 rounded-full" id="svc-gateway" style="background:#3b494c"></span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="font-body-sm text-[11px] text-on-surface-variant">Victim App</span>
+          <span class="w-2 h-2 rounded-full" id="svc-victim" style="background:#3b494c"></span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="flex-1 overflow-y-auto p-lg bg-surface-container-lowest relative">
+    <div class="fixed inset-0 pointer-events-none opacity-5 z-0" style="background-image:linear-gradient(#849396 1px,transparent 1px),linear-gradient(90deg,#849396 1px,transparent 1px);background-size:40px 40px"></div>
+    <div class="relative z-10">
+
+      <!-- Stats -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-md mb-lg">
+        <div class="glass-card p-md rounded-xl">
+          <div class="flex items-center justify-between mb-sm">
+            <span class="font-label-caps text-label-caps text-on-surface-variant">Active Runs</span>
+            <span class="material-symbols-outlined text-primary text-[20px]">bolt</span>
+          </div>
+          <div class="font-display text-headline-md text-on-surface" id="stat-active">—</div>
+          <div class="font-label-caps text-[10px] text-on-surface-variant mt-xs">pipelines in flight</div>
+        </div>
+        <div class="glass-card p-md rounded-xl">
+          <div class="flex items-center justify-between mb-sm">
+            <span class="font-label-caps text-label-caps text-on-surface-variant">Resolved</span>
+            <span class="material-symbols-outlined text-tertiary text-[20px]">verified</span>
+          </div>
+          <div class="font-display text-headline-md text-on-surface" id="stat-resolved">—</div>
+          <div class="font-label-caps text-[10px] text-on-surface-variant mt-xs">patches applied</div>
+        </div>
+        <div class="glass-card p-md rounded-xl">
+          <div class="flex items-center justify-between mb-sm">
+            <span class="font-label-caps text-label-caps text-on-surface-variant">Failed</span>
+            <span class="material-symbols-outlined text-error text-[20px]">error</span>
+          </div>
+          <div class="font-display text-headline-md text-on-surface" id="stat-failed">—</div>
+          <div class="font-label-caps text-[10px] text-on-surface-variant mt-xs">pipeline errors</div>
+        </div>
+        <div class="glass-card p-md rounded-xl">
+          <div class="flex items-center justify-between mb-sm">
+            <span class="font-label-caps text-label-caps text-on-surface-variant">Flag Capture</span>
+            <span class="material-symbols-outlined text-secondary text-[20px]">flag</span>
+          </div>
+          <div class="font-display text-headline-md text-on-surface" id="stat-flag-rate">—</div>
+          <div class="font-label-caps text-[10px] text-on-surface-variant mt-xs">exploit success rate</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-md">
+
+        <!-- Runs table -->
+        <div class="lg:col-span-2 glass-card rounded-xl overflow-hidden">
+          <div class="p-md border-b border-outline-variant/20 flex items-center justify-between">
+            <h2 class="font-headline-sm text-on-surface">Active &amp; Recent Runs</h2>
+            <button onclick="fetchAllRuns()" class="font-label-caps text-label-caps text-primary hover:underline flex items-center gap-xs">
+              <span class="material-symbols-outlined text-[14px]">refresh</span> Refresh
+            </button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead>
+                <tr class="border-b border-outline-variant/10">
+                  <th class="text-left p-md font-label-caps text-[10px] text-on-surface-variant">Trace ID</th>
+                  <th class="text-left p-md font-label-caps text-[10px] text-on-surface-variant">Status</th>
+                  <th class="text-left p-md font-label-caps text-[10px] text-on-surface-variant">Node / Phase</th>
+                  <th class="text-center p-md font-label-caps text-[10px] text-on-surface-variant">Iters</th>
+                  <th class="text-center p-md font-label-caps text-[10px] text-on-surface-variant">Flag</th>
+                </tr>
+              </thead>
+              <tbody id="runs-tbody">
+                <tr><td colspan="5" class="p-md text-center text-on-surface-variant font-body-sm text-[12px]">Loading runs…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Live event feed -->
+        <div class="glass-card rounded-xl overflow-hidden flex flex-col" style="max-height:420px">
+          <div class="p-md border-b border-outline-variant/20 flex items-center justify-between shrink-0">
+            <h2 class="font-headline-sm text-on-surface">Live Events</h2>
+            <div class="flex items-center gap-xs">
+              <span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse" id="feed-dot"></span>
+              <span class="font-label-caps text-[10px] text-tertiary">STREAM</span>
+            </div>
+          </div>
+          <div class="flex-1 overflow-y-auto p-sm space-y-0" id="event-feed">
+            <div class="font-code-sm text-[11px] text-on-surface-variant p-sm">Waiting for events…</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Awaiting approval banner -->
+      <div id="approval-banner" class="hidden mt-md glass-card rounded-xl p-md border border-[#f4d160]/30 bg-[#f4d160]/5">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-sm">
+            <span class="material-symbols-outlined text-[#f4d160]">pending_actions</span>
+            <div>
+              <div class="font-headline-sm text-[#f4d160]">Human Approval Required</div>
+              <div class="font-body-sm text-[12px] text-on-surface-variant" id="approval-trace-text">Pipeline is waiting for patch approval.</div>
+            </div>
+          </div>
+          <div class="flex gap-sm">
+            <button onclick="openApproval()" class="px-md py-2 bg-tertiary text-on-tertiary rounded font-label-caps text-label-caps hover:brightness-110 transition-all">Review &amp; Approve</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Approval modal -->
+<div id="approval-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center" style="background:rgba(6,14,32,0.8);backdrop-filter:blur(4px)">
+  <div class="glass-card rounded-xl w-full max-w-2xl mx-md overflow-hidden" style="max-height:80vh;display:flex;flex-direction:column">
+    <div class="p-md border-b border-outline-variant/20 flex items-center justify-between shrink-0">
+      <h2 class="font-headline-sm text-[#f4d160]">Review Patch — <span id="modal-trace-id" class="font-code-sm text-[14px]"></span></h2>
+      <button onclick="closeModal()" class="text-on-surface-variant hover:text-on-surface"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div class="flex-1 overflow-y-auto p-md">
+      <div class="mb-md">
+        <div class="font-label-caps text-label-caps text-on-surface-variant mb-sm">Architect's Remediation Patch</div>
+        <pre id="modal-patch" class="bg-surface-container-lowest border border-outline-variant/30 rounded p-md font-code-sm text-[11px] text-primary overflow-x-auto whitespace-pre-wrap" style="max-height:300px">Loading patch…</pre>
+      </div>
+      <div id="modal-flag-section" class="hidden mb-md p-sm bg-tertiary/5 border border-tertiary/20 rounded">
+        <div class="font-label-caps text-label-caps text-tertiary mb-xs">Captured Flag</div>
+        <span id="modal-flag" class="font-code-sm text-[12px] text-tertiary"></span>
+      </div>
+      <div id="modal-exploit-section" class="hidden mb-md p-sm bg-primary/5 border border-primary/20 rounded">
+        <div class="font-label-caps text-label-caps text-primary mb-xs">Exploit Proof</div>
+        <span id="modal-exploit" class="font-code-sm text-[11px] text-on-surface-variant"></span>
+      </div>
+    </div>
+    <div class="p-md border-t border-outline-variant/20 flex gap-sm shrink-0">
+      <button onclick="approvePatch()" id="approve-btn" class="flex-1 py-2.5 bg-tertiary text-on-tertiary rounded font-headline-sm text-sm hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-sm">
+        <span class="material-symbols-outlined text-[18px]">check_circle</span> Apply Patch
+      </button>
+      <button onclick="rejectPatch()" id="reject-btn" class="flex-1 py-2.5 bg-error/20 text-error border border-error/30 rounded font-headline-sm text-sm hover:bg-error/30 active:scale-95 transition-all flex items-center justify-center gap-sm">
+        <span class="material-symbols-outlined text-[18px]">cancel</span> Reject
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'http://localhost:3001';
+const WS_URL = 'ws://localhost:8001/ws';
+
+let ws = null;
+let runs = {};
+let feedEvents = [];
+let pendingApprovalTrace = null;
+let modalTraceId = null;
+
+// ── Clock ──
+setInterval(() => {
+  const el = document.getElementById('clock');
+  if (el) el.textContent = new Date().toLocaleTimeString('en-US', {hour12:false});
+}, 1000);
+
+// ── WebSocket ──
+function connectWS() {
+  try { ws = new WebSocket(WS_URL); } catch(e) { scheduleWSReconnect(); return; }
+  ws.onopen = () => setWSStatus('connected');
+  ws.onclose = () => { setWSStatus('offline'); scheduleWSReconnect(); };
+  ws.onerror = () => setWSStatus('error');
+  ws.onmessage = (e) => {
+    try {
+      const msg = JSON.parse(e.data);
+      pushEvent(msg);
+      handleWSMessage(msg);
+    } catch(_) {}
+  };
+}
+function scheduleWSReconnect() { setTimeout(connectWS, 3000); }
+function setWSStatus(s) {
+  const dot = document.getElementById('ws-dot');
+  const lbl = document.getElementById('ws-label');
+  const badge = document.getElementById('ws-badge');
+  if (s === 'connected') {
+    dot.style.background = '#a8ffd2'; lbl.textContent = 'LIVE'; lbl.style.color = '#a8ffd2';
+    badge.style.background = 'rgba(168,255,210,0.1)'; badge.style.borderColor = 'rgba(168,255,210,0.2)';
+  } else {
+    dot.style.background = '#ffb4ab'; lbl.textContent = s === 'offline' ? 'OFFLINE' : 'ERROR'; lbl.style.color = '#ffb4ab';
+    badge.style.background = 'rgba(255,180,171,0.1)'; badge.style.borderColor = 'rgba(255,180,171,0.2)';
+  }
+}
+
+function handleWSMessage(msg) {
+  const traceId = extractTraceId(msg);
+  if (traceId) refreshRun(traceId);
+  if (msg.event === 'pipeline_step') {
+    const state = firstNodeState(msg.data);
+    if (state && state.status === 'awaiting_approval') showApprovalBanner(state.trace_id, state);
+  }
+  if (['pipeline_complete', 'human_approved', 'human_rejected'].includes(msg.event)) {
+    const tid = msg.data?.trace_id;
+    if (tid === pendingApprovalTrace) hideApprovalBanner();
+  }
+}
+
+function extractTraceId(msg) {
+  if (msg.data?.trace_id) return msg.data.trace_id;
+  if (msg.event === 'pipeline_step' && msg.data) {
+    const s = firstNodeState(msg.data);
+    return s?.trace_id;
+  }
+  return null;
+}
+
+function firstNodeState(data) {
+  if (!data) return null;
+  const key = Object.keys(data)[0];
+  return key ? data[key] : null;
+}
+
+// ── Event feed ──
+const EVT_COLORS = {
+  alert_received: '#f4d160', pipeline_step: '#c3f5ff',
+  pipeline_complete: '#a8ffd2', pipeline_error: '#ffb4ab',
+  human_approved: '#a8ffd2', human_rejected: '#ffb4ab', trigger: '#b7c8e1',
+};
+
+function pushEvent(msg) {
+  feedEvents.unshift({ ...msg, _ts: Date.now() });
+  if (feedEvents.length > 60) feedEvents.pop();
+  renderFeed();
+}
+
+function renderFeed() {
+  const feed = document.getElementById('event-feed');
+  feed.innerHTML = feedEvents.slice(0, 25).map(evt => {
+    const color = EVT_COLORS[evt.event] || '#849396';
+    const tid = extractTraceId(evt) || '—';
+    const shortTid = tid.length > 8 ? tid.slice(0, 8) + '…' : tid;
+    const time = new Date(evt._ts).toLocaleTimeString('en-US', {hour12:false, hour:'2-digit', minute:'2-digit', second:'2-digit'});
+    return `<div class="flex gap-xs py-0.5 border-b border-outline-variant/10 hover:bg-surface-container-high/20">
+      <span style="color:#849396;min-width:56px" class="font-code-sm text-[10px] shrink-0">${time}</span>
+      <span style="color:${color};min-width:140px" class="font-code-sm text-[11px] shrink-0">${evt.event}</span>
+      <span style="color:#849396" class="font-code-sm text-[10px] truncate">${shortTid}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── Runs ──
+async function fetchAllRuns() {
+  try {
+    const [tracesRes, runsRes] = await Promise.allSettled([
+      fetch(`${API}/api/traces`).then(r => r.ok ? r.json() : {traces:[]}),
+      fetch(`${API}/api/runs`).then(r => r.ok ? r.json() : []),
+    ]);
+    const combined = {};
+    const runList = runsRes.status === 'fulfilled' ? (runsRes.value || []) : [];
+    const traceList = tracesRes.status === 'fulfilled' ? (tracesRes.value?.traces || []) : [];
+    for (const r of runList) combined[r.trace_id] = { ...r };
+    for (const t of traceList) {
+      combined[t.trace_id] = { ...(combined[t.trace_id] || {}), ...t };
+    }
+    runs = combined;
+    renderRuns();
+    updateStats();
+    checkForPendingApprovals();
+  } catch(_) {}
+}
+
+async function refreshRun(traceId) {
+  try {
+    const data = await fetch(`${API}/api/status/${traceId}`).then(r => r.json());
+    runs[traceId] = { ...(runs[traceId] || { trace_id: traceId, startTime: Date.now() }), ...data };
+    renderRuns();
+    updateStats();
+    if (data.human_approval_pending) showApprovalBanner(traceId, data);
+  } catch(_) {}
+}
+
+const STATUS_BADGE = {
+  queued:           'bg-outline-variant/20 text-on-surface-variant border-outline-variant/30',
+  scouting:         'bg-primary/10 text-primary border-primary/20',
+  summarizing:      'bg-primary/10 text-primary border-primary/20',
+  investigating:    'bg-secondary/10 text-secondary border-secondary/20',
+  sandbox_running:  'bg-[#f4d160]/10 text-[#f4d160] border-[#f4d160]/20',
+  evaluating:       'bg-secondary/10 text-secondary border-secondary/20',
+  patching:         'bg-primary/10 text-primary border-primary/20',
+  awaiting_approval:'bg-[#f4d160]/10 text-[#f4d160] border-[#f4d160]/20',
+  verifying:        'bg-tertiary/10 text-tertiary border-tertiary/20',
+  rolling_back:     'bg-error/10 text-error border-error/20',
+  resolved:         'bg-tertiary/10 text-tertiary border-tertiary/20',
+  failed:           'bg-error/10 text-error border-error/20',
+  rejected:         'bg-outline-variant/20 text-on-surface-variant border-outline-variant/30',
+  unknown:          'bg-outline-variant/20 text-on-surface-variant border-outline-variant/30',
+};
+
+function statusDot(status) {
+  if (['resolved'].includes(status)) return '<span class="w-2 h-2 rounded-full bg-tertiary inline-block mr-1"></span>';
+  if (['failed','rolling_back'].includes(status)) return '<span class="w-2 h-2 rounded-full bg-error inline-block mr-1"></span>';
+  if (['scouting','investigating','sandbox_running','patching','verifying'].includes(status))
+    return '<span class="w-2 h-2 rounded-full bg-primary animate-pulse inline-block mr-1"></span>';
+  if (status === 'awaiting_approval') return '<span class="w-2 h-2 rounded-full animate-pulse inline-block mr-1" style="background:#f4d160"></span>';
+  return '<span class="w-2 h-2 rounded-full bg-outline-variant inline-block mr-1"></span>';
+}
+
+function renderRuns() {
+  const tbody = document.getElementById('runs-tbody');
+  const list = Object.values(runs).sort((a,b) => (b.startTime||0)-(a.startTime||0)).slice(0, 20);
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="p-md text-center text-on-surface-variant font-body-sm text-[12px]">No runs yet — trigger an attack to start.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map(r => {
+    const s = r.status || 'unknown';
+    const badge = STATUS_BADGE[s] || STATUS_BADGE.unknown;
+    const shortId = r.trace_id.slice(0, 8);
+    const node = r.current_node ? r.current_node.replace(/_/g,' ') : s.replace(/_/g,' ');
+    const flag = r.has_flag ? `<span style="color:#a8ffd2" class="material-symbols-outlined text-[16px]">flag</span>` : '—';
+    const iters = r.iteration_count ?? '—';
+    return `<tr class="hover:bg-surface-container-high/20 transition-colors border-b border-outline-variant/10">
+      <td class="p-md">
+        <a href="orchestration.html?trace=${r.trace_id}" class="font-code-sm text-[11px] text-primary hover:underline">${shortId}…</a>
+      </td>
+      <td class="p-md">
+        <span class="px-2 py-0.5 rounded font-label-caps text-[10px] border ${badge} inline-flex items-center">
+          ${statusDot(s)}${s.toUpperCase().replace(/_/g,' ')}
+        </span>
+      </td>
+      <td class="p-md font-code-sm text-[11px] text-on-surface-variant capitalize">${node}</td>
+      <td class="p-md text-center font-code-sm text-[11px] text-on-surface-variant">${iters}</td>
+      <td class="p-md text-center">${flag}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Stats ──
+function updateStats() {
+  const active = Object.values(runs).filter(r => !['resolved','failed','rejected',''].includes(r.status||'')).length;
+  const resolved = Object.values(runs).filter(r => r.status === 'resolved').length;
+  const failed = Object.values(runs).filter(r => r.status === 'failed').length;
+  const total = Object.values(runs).length;
+  const withFlag = Object.values(runs).filter(r => r.has_flag).length;
+  setText('stat-active', active);
+  setText('stat-resolved', resolved);
+  setText('stat-failed', failed);
+  setText('stat-flag-rate', total > 0 ? Math.round(withFlag/total*100)+'%' : '—');
+}
+
+// Also update from Prometheus metrics
+async function fetchMetrics() {
+  try {
+    const text = await fetch(`${API}/api/metrics`).then(r => r.text());
+    const m = parsePrometheus(text);
+    if (m.chimera_active_runs != null) setText('stat-active', Math.round(m.chimera_active_runs));
+    if (m.chimera_runs_resolved_total != null) setText('stat-resolved', Math.round(m.chimera_runs_resolved_total));
+    if (m.chimera_runs_failed_total != null) setText('stat-failed', Math.round(m.chimera_runs_failed_total));
+    if (m.chimera_flag_capture_rate != null) setText('stat-flag-rate', (m.chimera_flag_capture_rate*100).toFixed(0)+'%');
+  } catch(_) {}
+}
+
+function parsePrometheus(text) {
+  const out = {};
+  for (const line of text.split('\n')) {
+    if (line.startsWith('#') || !line.trim()) continue;
+    const m = line.match(/^(\w+)(?:\{[^}]*\})?\s+([\d.e+\-]+)/i);
+    if (m) { const v = parseFloat(m[2]); if (!isNaN(v)) out[m[1]] = (out[m[1]]||0)+v; }
+  }
+  return out;
+}
+
+function setText(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
+
+// ── Health checks ──
+async function checkHealth() {
+  const checks = [
+    { id:'svc-orchestrator', url:`${API}/api/health` },
+    { id:'svc-gateway', url:`${API}/health` },
+    { id:'svc-victim', url:`http://localhost:5000/health` },
+  ];
+  for (const c of checks) {
+    try {
+      const ok = await fetch(c.url, {signal:AbortSignal.timeout(3000)}).then(r => r.ok);
+      document.getElementById(c.id).style.background = ok ? '#a8ffd2' : '#ffb4ab';
+    } catch(_) {
+      document.getElementById(c.id).style.background = '#ffb4ab';
+    }
+  }
+}
+
+// ── Approval ──
+function checkForPendingApprovals() {
+  for (const r of Object.values(runs)) {
+    if (r.human_approval_pending || r.status === 'awaiting_approval') {
+      showApprovalBanner(r.trace_id, r);
+      return;
+    }
+  }
+}
+
+function showApprovalBanner(traceId, state) {
+  pendingApprovalTrace = traceId;
+  const banner = document.getElementById('approval-banner');
+  banner.classList.remove('hidden');
+  setText('approval-trace-text', `Run ${traceId.slice(0,8)}… is awaiting your review. Architect has generated a patch.`);
+  banner._state = state;
+}
+
+function hideApprovalBanner() {
+  pendingApprovalTrace = null;
+  document.getElementById('approval-banner').classList.add('hidden');
+  closeModal();
+}
+
+function openApproval() {
+  if (!pendingApprovalTrace) return;
+  modalTraceId = pendingApprovalTrace;
+  document.getElementById('modal-trace-id').textContent = modalTraceId.slice(0,8)+'…';
+  document.getElementById('approval-modal').classList.remove('hidden');
+  // Fetch full status to get patch
+  fetch(`${API}/api/status/${modalTraceId}`).then(r => r.json()).then(data => {
+    // patch may be in the WS-cached state
+    const banner = document.getElementById('approval-banner');
+    const state = banner._state || {};
+    const patch = state.remediation_patch || data.remediation_patch || '(patch not yet available — refresh in a moment)';
+    document.getElementById('modal-patch').textContent = patch;
+    const flag = state.captured_flag || data.captured_flag;
+    if (flag) {
+      document.getElementById('modal-flag').textContent = flag;
+      document.getElementById('modal-flag-section').classList.remove('hidden');
+    }
+    const exploit = state.exploit_proof || data.exploit_proof;
+    if (exploit) {
+      document.getElementById('modal-exploit').textContent = exploit;
+      document.getElementById('modal-exploit-section').classList.remove('hidden');
+    }
+  }).catch(_=>{});
+}
+
+function closeModal() {
+  document.getElementById('approval-modal').classList.add('hidden');
+  modalTraceId = null;
+}
+
+async function approvePatch() {
+  if (!modalTraceId) return;
+  document.getElementById('approve-btn').textContent = 'Approving…';
+  try {
+    const r = await fetch(`${API}/api/approve/${modalTraceId}`, {method:'POST'});
+    const d = await r.json();
+    if (r.ok) { closeModal(); hideApprovalBanner(); pushEvent({event:'human_approved',data:d,_ts:Date.now()}); }
+    else alert(d.error || 'Approve failed');
+  } catch(e) { alert(e.message); }
+  document.getElementById('approve-btn').textContent = 'Apply Patch';
+}
+
+async function rejectPatch() {
+  if (!modalTraceId) return;
+  document.getElementById('reject-btn').textContent = 'Rejecting…';
+  try {
+    const r = await fetch(`${API}/api/reject/${modalTraceId}`, {method:'POST'});
+    const d = await r.json();
+    if (r.ok) { closeModal(); hideApprovalBanner(); pushEvent({event:'human_rejected',data:d,_ts:Date.now()}); }
+    else alert(d.error || 'Reject failed');
+  } catch(e) { alert(e.message); }
+  document.getElementById('reject-btn').textContent = 'Reject';
+}
+
+// ── Trigger ──
+async function triggerAttack() {
+  const btn = document.getElementById('trigger-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">hourglass_empty</span> Triggering…';
+  try {
+    const r = await fetch(`${API}/api/trigger`, {method:'POST'});
+    const d = await r.json();
+    if (r.ok && d.trace_id) {
+      runs[d.trace_id] = {trace_id:d.trace_id, status:'queued', startTime:Date.now()};
+      renderRuns();
+      pushEvent({event:'trigger', data:d, _ts:Date.now()});
+    } else {
+      alert(d.error || 'Trigger failed');
+    }
+  } catch(e) { alert('Cannot reach gateway: '+e.message); }
+  btn.disabled = false;
+  btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">bug_report</span> Trigger SQLi Attack';
+}
+
+// ── Init ──
+connectWS();
+fetchAllRuns();
+fetchMetrics();
+checkHealth();
+setInterval(fetchAllRuns, 5000);
+setInterval(fetchMetrics, 15000);
+setInterval(checkHealth, 30000);
+</script>
+</body>
+</html>

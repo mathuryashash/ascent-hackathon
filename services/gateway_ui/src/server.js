@@ -1,53 +1,110 @@
 const express = require('express');
 const path = require('path');
 const http = require('http');
-const WebSocket = require('ws');
+const crypto = require('crypto');
 
 const app = express();
-const port = 3000;
+const PORT = process.env.PORT || 3000;
+const ORCHESTRATOR_URL = process.env.ORCHESTRATOR_URL || 'http://orchestrator:8000';
+const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || 'chimera-demo-secret-2026-hackathon';
 
-app.use(express.static(path.join(__dirname, '../public')));
+const runRegistry = new Map();
 
-const server = http.createServer(app);
-const wss = new WebSocket.Server({ server, path: '/ws' });
-
-wss.on('connection', (ws) => {
-  console.log('Client connected to mock WebSocket');
-  
-  // Initial message
-  ws.send(JSON.stringify({ type: 'system', content: 'Connection established. Awaiting SIEM payload...' }));
-
-  // Simulate an attack sequence after a delay
-  setTimeout(() => {
-    ws.send(JSON.stringify({ type: 'system', content: 'SIEM Alert Received: SQL Injection detected from 192.168.1.45' }));
-    
-    setTimeout(() => {
-      ws.send(JSON.stringify({ type: 'thought', content: 'Analyzing SQL injection payload: \' OR \'1\'=\'1' }));
-    }, 2000);
-
-    setTimeout(() => {
-      ws.send(JSON.stringify({ type: 'thought', content: 'Payload attempts to bypass authentication. Exploiting vulnerability to confirm...' }));
-    }, 4000);
-
-    setTimeout(() => {
-      ws.send(JSON.stringify({ type: 'tool_call', tool: 'execute_bash_sandboxed', content: 'Testing exploit on sandboxed instance...' }));
-    }, 6000);
-
-    setTimeout(() => {
-      ws.send(JSON.stringify({ type: 'tool_result', content: 'Exploit successful. Admin access achieved. Vulnerability confirmed.' }));
-    }, 8500);
-
-    setTimeout(() => {
-      ws.send(JSON.stringify({ type: 'thought', content: 'Generating patch for app.py to use parameterized queries instead of string concatenation.' }));
-    }, 11000);
-    
-    setTimeout(() => {
-      ws.send(JSON.stringify({ type: 'system', content: 'Patch deployed to staging. Verifier agent initiating test suite.' }));
-    }, 14000);
-    
-  }, 5000);
+// ── CORS — allow the static dashboard ────────────────────────────────────────
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  if (req.method === 'OPTIONS') { res.sendStatus(200); return; }
+  next();
 });
 
-server.listen(port, () => {
-  console.log(`Gateway UI listening at http://localhost:${port}`);
+// ── Security headers ──────────────────────────────────────────────────────────
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
+
+// ── Static files ─────────────────────────────────────────────────────────────
+app.use(express.static(path.join(__dirname, '..', 'public')));
+
+// ── Utility ──────────────────────────────────────────────────────────────────
+async function orchestratorFetch(urlPath, options = {}) {
+  const url = `${ORCHESTRATOR_URL}${urlPath}`;
+  return fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+    },
+  });
+}
+
+function log(level, msg, extra = {}) {
+  console.log(JSON.stringify({ level, msg, ts: new Date().toISOString(), ...extra }));
+}
+
+// ── API Proxy ─────────────────────────────────────────────────────────────────
+
+app.get('/api/health', async (req, res) => {
+  try {
+    const resp = await orchestratorFetch('/health');
+    res.status(resp.status).json(await resp.json());
+  } catch (err) {
+    res.status(502).json({ status: 'unreachable', detail: err.message });
+  }
+});
+
+app.post('/api/trigger', async (req, res) => {
+  if (!WEBHOOK_SECRET) {
+    return res.status(503).json({ error: 'WEBHOOK_SECRET not configured on gateway' });
+  }
+
+  const alert = {
+    type: 'sqli',
+    target: 'victim-service',
+    timestamp: new Date().toISOString(),
+    evidence: "GET /search?q=' OR '1'='1 HTTP/1.1 — triggered from Chimera Dashboard",
+    source: 'gateway-ui-demo',
+    trigger: {
+      matched_pattern: 'UNION SELECT',
+      route: '/search'
+    }
+  };
+
+  const body = JSON.stringify(alert);
+  const signature = 'sha256=' + crypto.createHmac('sha256', WEBHOOK_SECRET).update(body).digest('hex');
+
+  try {
+    const resp = await orchestratorFetch('/webhook/alert', {
+      method: 'POST',
+      body,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Webhook-Signature': signature,
+      },
+    });
+
+    if (!resp.ok) {
+      const errBody = await resp.text();
+      return res.status(resp.status).json({ error: errBody });
+    }
+
+    const data = await resp.json();
+    res.json(data);
+  } catch (err) {
+    res.status(502).json({ error: 'Orchestrator unreachable', detail: err.message });
+  }
+});
+
+// ── Catch-all: serve index.html ──────────────────────────────────────────────
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Chimera Gateway UI started on port ${PORT}`);
+  console.log(`Proxying to Orchestrator at ${ORCHESTRATOR_URL}`);
 });
