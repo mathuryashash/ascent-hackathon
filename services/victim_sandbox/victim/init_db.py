@@ -24,6 +24,11 @@ CREATE TABLE IF NOT EXISTS secrets (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS users (
+    username TEXT PRIMARY KEY,
+    password TEXT NOT NULL
+);
 """
 
 SEED_PRODUCTS = [
@@ -74,6 +79,10 @@ def init_db():
             SEED_SECRETS
         )
         print("[init_db] Seeded flag into secrets table.")
+
+    # Seed demo users for /login auth-bypass demo
+    cursor.execute("INSERT OR IGNORE INTO users VALUES ('admin', 'secret123')")
+    print("[init_db] Ensured demo user 'admin' exists in users table.")
 
     conn.commit()
     conn.close()

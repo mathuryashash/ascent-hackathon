@@ -26,7 +26,12 @@ from pathlib import Path
 from typing import Literal, Dict, Any, Optional
 
 import threading
+import asyncio
+import threading
+import time
 import structlog
+from tracing import trace_node_enter, trace_node_exit, trace_node_error
+from metrics import record_iteration
 
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage, ToolMessage
 from langgraph.graph import StateGraph, END
@@ -49,15 +54,18 @@ from schemas import (
 
 log = structlog.get_logger(__name__)
 
+# CWE/CVSS metadata for logging
+_VULN_METADATA = {"cwe": "CWE-89", "cvss": "9.8", "severity": "CRITICAL"}
+
 # ---------------------------------------------------------------------------
 # LLM Setup
 # ---------------------------------------------------------------------------
 
 def _make_scout_llm():
-    from langchain_google_genai import ChatGoogleGenerativeAI
-    return ChatGoogleGenerativeAI(
-        model=os.getenv("GEMINI_FLASH_MODEL", "gemini-1.5-flash"),
-        google_api_key=os.environ["GEMINI_API_KEY"],
+    from langchain_groq import ChatGroq
+    return ChatGroq(
+        model=os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"),
+        groq_api_key=os.environ["GROQ_API_KEY"],
         temperature=0,
     )
 
@@ -87,12 +95,45 @@ def _load_prompt(name: str) -> str:
         )
     return file_path.read_text(encoding="utf-8")
 
+def _repair_json(s: str) -> str:
+    """Close any unterminated strings/objects in a truncated JSON fragment."""
+    in_string = False
+    escape_next = False
+    opens: list[str] = []
+    for c in s:
+        if escape_next:
+            escape_next = False
+            continue
+        if c == "\\" and in_string:
+            escape_next = True
+            continue
+        if c == '"':
+            in_string = not in_string
+        elif not in_string:
+            if c in ("{", "["):
+                opens.append("]" if c == "[" else "}")
+            elif c in ("}", "]") and opens:
+                opens.pop()
+    result = s
+    if in_string:
+        result += '"'
+    while opens:
+        result += opens.pop()
+    return result
+
+
 def _parse_json_response(content: str, model_cls):
     clean = re.sub(r"```(?:json)?\s*", "", content).strip().rstrip("`").strip()
     match = re.search(r"\{.*\}", clean, re.DOTALL)
     if not match:
         raise ValueError(f"No JSON object found in response: {content[:200]}")
-    data = json.loads(match.group(0), strict=False)
+    json_str = match.group(0)
+    try:
+        data = json.loads(json_str, strict=False)
+    except json.JSONDecodeError as exc:
+        log.warning("json_parse_repair", error=str(exc), snippet=json_str[:120])
+        repaired = _repair_json(json_str)
+        data = json.loads(repaired, strict=False)
     return model_cls.model_validate(data)
 
 def _truncate(text: str, max_chars: int = 2000) -> str:
@@ -133,7 +174,8 @@ def ingress_node(state: GraphState) -> GraphState:
 async def scout_node(state: GraphState) -> GraphState:
     trace_id = state["trace_id"]
     log.info("scout_start", trace_id=trace_id)
-    
+    log.info("vulnerability_classification", **_VULN_METADATA)
+
     raw_logs = get_logs(tail_lines=100)
     system_prompt = _load_prompt("scout")
     llm = _make_scout_llm()
@@ -148,7 +190,7 @@ async def scout_node(state: GraphState) -> GraphState:
         )),
     ]
     
-    response = await llm.ainvoke(messages)
+    response = await asyncio.wait_for(llm.ainvoke(messages), timeout=60.0)
     scout_out = _parse_json_response(response.content, ScoutOutput)
     
     return {
@@ -170,8 +212,8 @@ async def summarizer_node(state: GraphState) -> GraphState:
     prompt = _load_prompt("summarizer").format(raw_output=_truncate(raw_content, 4000))
     
     llm = _make_scout_llm()
-    response = await llm.ainvoke([HumanMessage(content=prompt)])
-    
+    response = await asyncio.wait_for(llm.ainvoke([HumanMessage(content=prompt)]), timeout=60.0)
+
     return {
         **state,
         "target_topography": response.content,
@@ -198,7 +240,12 @@ async def investigator_node(state: GraphState) -> GraphState:
         HumanMessage(content=context),
     ]
     
-    response = await llm.ainvoke(messages)
+    try:
+        response = await asyncio.wait_for(llm.ainvoke(messages), timeout=60.0)
+    except Exception as primary_err:
+        log.warning("investigator_groq_fallback", error=str(primary_err))
+        fallback_llm = _make_architect_llm()
+        response = await asyncio.wait_for(fallback_llm.ainvoke(messages), timeout=60.0)
     inv_out = _parse_json_response(response.content, InvestigatorOutput)
     
     return {
@@ -274,7 +321,7 @@ async def architect_node(state: GraphState) -> GraphState:
         HumanMessage(content=f"Code:\n{source_code}\n\nExploit:\n{state['exploit_proof']}"),
     ]
     
-    response = await llm.ainvoke(messages)
+    response = await asyncio.wait_for(llm.ainvoke(messages), timeout=60.0)
     arch_out = _parse_json_response(response.content, ArchitectOutput)
     
     return {

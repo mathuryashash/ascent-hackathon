@@ -24,12 +24,22 @@ const runRegistry = new Map();
 
 app.use(express.json());
 
+// ── CORS — allow the static dashboard (opened from file:// or any origin) ─────
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  if (req.method === 'OPTIONS') { res.sendStatus(200); return; }
+  next();
+});
+
 // ── Security headers ──────────────────────────────────────────────────────────
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' ws: wss:;");
+  // Allow ws://localhost:8001 for direct orchestrator WebSocket from dashboard pages
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' ws: wss: http://localhost:8001 http://localhost:3001 http://localhost:5000;");
   next();
 });
 
@@ -109,6 +119,17 @@ app.post('/api/reject/:traceId', async (req, res) => {
   }
 });
 
+// GET /api/verify-fix/:traceId
+app.get('/api/verify-fix/:traceId', async (req, res) => {
+  try {
+    const r = await fetch(`${ORCHESTRATOR_URL}/verify-fix/${req.params.traceId}`);
+    const data = await r.json();
+    res.json(data);
+  } catch (e) {
+    res.status(502).json({ error: e.message });
+  }
+});
+
 // ── SSE: real-time run state stream ──────────────────────────────────────────
 app.get('/api/events/:traceId', async (req, res) => {
   const { traceId } = req.params;
@@ -172,6 +193,10 @@ app.post('/api/trigger', async (req, res) => {
     timestamp: new Date().toISOString(),
     evidence: "GET /search?q=' OR '1'='1 HTTP/1.1 — triggered from Chimera Dashboard",
     source: 'gateway-ui-demo',
+    trigger: {
+      matched_pattern: 'UNION SELECT',
+      route: '/search'
+    }
   };
 
   const body = JSON.stringify(alert);
@@ -207,6 +232,16 @@ app.post('/api/trigger', async (req, res) => {
     res.json({ trace_id: traceId, message: 'SQLi attack simulation triggered successfully' });
   } catch (err) {
     log('error', 'Trigger failed', { error: err.message });
+    res.status(502).json({ error: 'Orchestrator unreachable', detail: err.message });
+  }
+});
+
+// ── GET /api/traces — proxy all traces from orchestrator ─────────────────────
+app.get('/api/traces', async (req, res) => {
+  try {
+    const resp = await orchestratorFetch('/traces');
+    res.status(resp.status).json(await resp.json());
+  } catch (err) {
     res.status(502).json({ error: 'Orchestrator unreachable', detail: err.message });
   }
 });

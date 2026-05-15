@@ -1,0 +1,916 @@
+<!-- Project Chimera | Autonomous Purple Team Dashboard -->
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(23, 31, 51, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .pipeline-connector {
+            background: linear-gradient(90deg, #00daf3 0%, rgba(0, 218, 243, 0) 100%);
+        }
+        .pipeline-node {
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .pipeline-node.active {
+            background: rgba(0, 218, 243, 0.1);
+            border-color: rgba(0, 218, 243, 0.5);
+            box-shadow: 0 0 20px rgba(0, 218, 243, 0.3);
+        }
+        .pipeline-node.completed {
+            border-color: rgba(168, 255, 210, 0.5);
+        }
+        .pipeline-node.failed {
+            border-color: rgba(255, 180, 171, 0.5);
+        }
+        .pulse-ring {
+            animation: pulse-animation 2s infinite;
+        }
+        @keyframes pulse-animation {
+            0% { box-shadow: 0 0 0 0 rgba(0, 218, 243, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 218, 243, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 218, 243, 0); }
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(0, 218, 243, 0.3);
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 218, 243, 0.6);
+        }
+        .diff-add { background: rgba(168, 255, 210, 0.1); color: #a8ffd2; }
+        .diff-remove { background: rgba(255, 180, 171, 0.1); color: #ffb4ab; }
+        .diff-neutral { color: #bac9cc; }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "background": "#0b1326",
+                        "on-secondary": "#213145",
+                        "tertiary-container": "#5be9ad",
+                        "on-primary-fixed-variant": "#004f58",
+                        "on-tertiary-container": "#006645",
+                        "on-tertiary": "#003824",
+                        "on-secondary-container": "#a9bad3",
+                        "secondary": "#b7c8e1",
+                        "on-tertiary-fixed": "#002113",
+                        "tertiary": "#a8ffd2",
+                        "surface-container": "#171f33",
+                        "error-container": "#93000a",
+                        "primary-fixed": "#9cf0ff",
+                        "surface-container-low": "#131b2e",
+                        "on-error": "#690005",
+                        "outline-variant": "#3b494c",
+                        "surface": "#0b1326",
+                        "secondary-fixed": "#d3e4fe",
+                        "inverse-on-surface": "#283044",
+                        "surface-dim": "#0b1326",
+                        "surface-tint": "#00daf3",
+                        "on-secondary-fixed": "#0b1c30",
+                        "outline": "#849396",
+                        "on-primary-container": "#00626e",
+                        "inverse-surface": "#dae2fd",
+                        "primary-container": "#00e5ff",
+                        "tertiary-fixed-dim": "#4edea3",
+                        "on-surface-variant": "#bac9cc",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "primary": "#c3f5ff",
+                        "surface-bright": "#31394d",
+                        "inverse-primary": "#006875",
+                        "error": "#ffb4ab",
+                        "secondary-container": "#3a4a5f",
+                        "on-surface": "#dae2fd",
+                        "on-background": "#dae2fd",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "surface-container-highest": "#2d3449",
+                        "surface-container-lowest": "#060e20",
+                        "on-primary-fixed": "#001f24",
+                        "on-error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "surface-container-high": "#222a3d",
+                        "on-primary": "#00363d",
+                        "tertiary-fixed": "#6ffbbe",
+                        "surface-variant": "#2d3449",
+                        "primary-fixed-dim": "#00daf3"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "base": "4px",
+                        "gutter": "20px",
+                        "xs": "4px",
+                        "margin-mobile": "16px",
+                        "margin-desktop": "32px",
+                        "sm": "8px",
+                        "md": "16px",
+                        "xl": "40px",
+                        "lg": "24px"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Inter"],
+                        "display": ["Geist"],
+                        "headline-lg": ["Geist"],
+                        "headline-md": ["Geist"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-sm": ["Geist"],
+                        "headline-lg-mobile": ["Geist"],
+                        "label-caps": ["Geist"],
+                        "code-sm": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-sm": ["20px", {"lineHeight": "1.4", "fontWeight": "500"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                        "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                        "code-sm": ["13px", {"lineHeight": "1.4", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md overflow-hidden h-screen flex">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col h-full py-lg gap-md bg-surface-container-low/60 backdrop-blur-xl border-r border-outline-variant/20 w-64 z-50">
+<div class="px-md mb-lg">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 bg-primary-container rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-fixed" data-icon="memory">memory</span>
+</div>
+<div>
+<h1 class="font-display text-headline-sm font-bold text-primary">Omium Core</h1>
+<p class="font-label-caps text-[10px] text-on-surface-variant uppercase tracking-widest">Autonomous v2.4</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 flex flex-col gap-xs px-sm">
+<a class="flex items-center gap-md px-md py-sm rounded text-primary border-r-2 border-primary bg-primary/5 transition-all duration-200 translate-x-1" href="index.html">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-caps text-label-caps">Dashboard</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" href="orchestration.html">
+<span class="material-symbols-outlined" data-icon="memory">memory</span>
+<span class="font-label-caps text-label-caps">Orchestration</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" href="observability.html">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-label-caps text-label-caps">Observability</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" href="auth.html">
+<span class="material-symbols-outlined" data-icon="terminal">terminal</span>
+<span class="font-label-caps text-label-caps">Auth Portal</span>
+</a>
+</nav>
+<div class="px-md my-md">
+<button class="w-full bg-primary-container text-on-primary-container py-sm rounded font-bold font-label-caps text-label-caps hover:brightness-110 transition-all">
+                Deploy Agent
+            </button>
+</div>
+<div class="mt-auto px-sm flex flex-col gap-xs">
+<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="verified_user">verified_user</span>
+<span class="font-label-caps text-label-caps">Security</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="support_agent">support_agent</span>
+<span class="font-label-caps text-label-caps">Support</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col overflow-hidden relative">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center w-full px-margin-desktop h-16 sticky top-0 z-50 bg-surface/40 backdrop-blur-md border-b border-outline-variant/30">
+<div class="flex items-center gap-lg">
+<div class="font-display text-headline-md font-bold text-primary tracking-tight">Omium</div>
+<div class="hidden md:flex items-center bg-surface-container-lowest/50 px-md py-xs rounded border border-outline-variant/30 w-96">
+<span class="material-symbols-outlined text-on-surface-variant text-sm" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-sm text-on-surface placeholder:text-outline/50 w-full ml-sm" placeholder="Search entire ecosystem..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<div class="flex items-center gap-xs mr-md" id="health-badge">
+  <div class="w-2 h-2 rounded-full bg-outline" id="health-dot"></div>
+  <span class="font-label-caps text-[10px] text-on-surface-variant uppercase" id="health-text">CHECKING</span>
+</div>
+<div class="flex gap-sm mr-md border-r border-outline-variant/30 pr-md">
+<button class="p-xs text-on-surface-variant hover:bg-surface-container-highest/50 transition-colors rounded">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-xs text-on-surface-variant hover:bg-surface-container-highest/50 transition-colors rounded">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<button class="p-xs text-on-surface-variant hover:bg-surface-container-highest/50 transition-colors rounded">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+</button>
+</div>
+<div class="flex items-center gap-sm">
+<div class="text-right hidden sm:block">
+<div class="font-headline-md text-body-sm text-primary font-semibold">Admin.Core</div>
+<div class="font-body-sm text-[10px] text-on-surface-variant uppercase">Clearance Level 5</div>
+</div>
+<img alt="User avatar" class="w-8 h-8 rounded-full border border-primary/20" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxULTQ6cTPd5rlM5nnAzNmopKd0mn9z0dKlZp_fzC0KRFpnpmJ7UXXvHxh0vvUJgJXmi1I_vTE77yvWRRLVm_3zSU2Ub2oD-7jNFawuYnIDR-N4M1Cp_udQL3aArfG1cjyXXYLtOhtHOHEVrHLcqiMUggRVhDLh5GI57B2bPUsmHLahKvZOzieI5DlMjeYlwG7SMnJy4CeB5_bDBd8GRSOByW85aJFWS-UtTua7UgID6dbZmX6_pIJEMAiQOrjLWlZYKaDuxuFhAXY"/>
+</div>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-1 overflow-y-auto p-margin-desktop bg-background">
+<div class="max-w-[1600px] mx-auto space-y-xl">
+<!-- Real-time Metrics Section -->
+<section class="grid grid-cols-1 md:grid-cols-4 gap-gutter">
+<div class="glass-panel p-md flex flex-col justify-between h-32 relative overflow-hidden">
+<div class="flex justify-between items-start">
+<span class="font-label-caps text-on-surface-variant text-[11px] uppercase tracking-wider">Current Status</span>
+<span class="material-symbols-outlined text-primary text-sm" data-icon="featured_play_list">featured_play_list</span>
+</div>
+<div class="font-display text-headline-lg text-primary" id="current-status">IDLE</div>
+<div class="flex items-center gap-xs">
+<div class="w-2 h-2 rounded-full bg-outline animate-pulse"></div>
+<span class="font-body-sm text-[10px] text-on-surface-variant" id="status-detail">Waiting for alerts...</span>
+</div>
+</div>
+<div class="glass-panel p-md flex flex-col justify-between h-32">
+<div class="flex justify-between items-start">
+<span class="font-label-caps text-on-surface-variant text-[11px] uppercase tracking-wider">Avg Response Time</span>
+<span class="material-symbols-outlined text-primary text-sm" data-icon="schedule">schedule</span>
+</div>
+<div class="font-display text-headline-lg text-primary" id="avg-response">--<span class="text-headline-sm text-on-surface-variant opacity-60">ms</span></div>
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-tertiary text-xs" data-icon="trending_down">trending_down</span>
+<span class="font-body-sm text-[10px] text-tertiary" id="response-trend">N/A</span>
+</div>
+</div>
+<div class="glass-panel p-md flex flex-col justify-between h-32">
+<div class="flex justify-between items-start">
+<span class="font-label-caps text-on-surface-variant text-[11px] uppercase tracking-wider">Total Incidents</span>
+<span class="material-symbols-outlined text-primary text-sm" data-icon="warning">warning</span>
+</div>
+<div class="font-display text-headline-lg text-primary" id="total-incidents">0</div>
+<div class="flex items-center gap-xs">
+<div class="w-2 h-2 rounded-full bg-tertiary shadow-[0_0_8px_#a8ffd2]"></div>
+<span class="font-body-sm text-[10px] text-on-surface-variant" id="resolved-count">0 Resolved</span>
+</div>
+</div>
+<div class="glass-panel p-md flex flex-col justify-between h-32">
+<div class="flex justify-between items-start">
+<span class="font-label-caps text-on-surface-variant text-[11px] uppercase tracking-wider">Success Rate</span>
+<span class="material-symbols-outlined text-primary text-sm" data-icon="check_circle">check_circle</span>
+</div>
+<div class="font-display text-headline-lg text-primary" id="success-rate">--<span class="text-headline-sm text-on-surface-variant opacity-60">%</span></div>
+<div class="flex items-center gap-xs">
+<span class="font-body-sm text-[10px] text-on-surface-variant">Pipeline success</span>
+</div>
+</div>
+</section>
+
+<!-- LangGraph Pipeline Visualization -->
+<section class="glass-panel p-lg space-y-md">
+<div class="flex items-center justify-between border-b border-outline-variant/20 pb-sm">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="data_object">data_object</span>
+<h2 class="font-display text-headline-sm text-primary">Chimera Pipeline: 7-Node State Machine</h2>
+<span class="bg-primary/10 text-primary text-[10px] font-bold px-sm py-px rounded border border-primary/20" id="pipeline-badge">IDLE</span>
+</div>
+</div>
+<div class="flex items-center justify-between gap-md overflow-x-auto pb-md mt-md">
+<!-- Ingress Node -->
+<div class="pipeline-node min-w-max p-md border border-outline-variant/50 rounded-lg flex flex-col items-center gap-sm bg-surface-container/30 hover:bg-surface-container-high/40 transition-all" data-node="ingress">
+<div class="w-12 h-12 rounded-full border-2 border-outline-variant flex items-center justify-center bg-surface-container-low">
+<span class="material-symbols-outlined text-secondary text-lg" data-icon="cloud_download">cloud_download</span>
+</div>
+<div class="font-label-caps text-[11px] text-on-surface-variant uppercase">Ingress</div>
+<div class="h-1 w-8 bg-outline-variant/30 rounded-full"></div>
+<div class="font-code-sm text-[10px] text-on-surface-variant">Webhook Receive</div>
+</div>
+
+<!-- Arrow -->
+<div class="w-8 h-px pipeline-connector"></div>
+
+<!-- Scout Node -->
+<div class="pipeline-node min-w-max p-md border border-outline-variant/50 rounded-lg flex flex-col items-center gap-sm bg-surface-container/30 hover:bg-surface-container-high/40 transition-all" data-node="scout">
+<div class="w-12 h-12 rounded-full border-2 border-outline-variant flex items-center justify-center bg-surface-container-low">
+<span class="material-symbols-outlined text-secondary text-lg" data-icon="visibility">visibility</span>
+</div>
+<div class="font-label-caps text-[11px] text-on-surface-variant uppercase">Scout</div>
+<div class="h-1 w-8 bg-outline-variant/30 rounded-full"></div>
+<div class="font-code-sm text-[10px] text-on-surface-variant">Recon & Logs</div>
+</div>
+
+<!-- Arrow -->
+<div class="w-8 h-px pipeline-connector"></div>
+
+<!-- Summarizer Node -->
+<div class="pipeline-node min-w-max p-md border border-outline-variant/50 rounded-lg flex flex-col items-center gap-sm bg-surface-container/30 hover:bg-surface-container-high/40 transition-all" data-node="summarizer">
+<div class="w-12 h-12 rounded-full border-2 border-outline-variant flex items-center justify-center bg-surface-container-low">
+<span class="material-symbols-outlined text-secondary text-lg" data-icon="description">description</span>
+</div>
+<div class="font-label-caps text-[11px] text-on-surface-variant uppercase">Summarize</div>
+<div class="h-1 w-8 bg-outline-variant/30 rounded-full"></div>
+<div class="font-code-sm text-[10px] text-on-surface-variant">Condense Data</div>
+</div>
+
+<!-- Arrow -->
+<div class="w-8 h-px pipeline-connector"></div>
+
+<!-- Investigator Node -->
+<div class="pipeline-node min-w-max p-md border border-outline-variant/50 rounded-lg flex flex-col items-center gap-sm bg-surface-container/30 hover:bg-surface-container-high/40 transition-all" data-node="investigator">
+<div class="w-12 h-12 rounded-full border-2 border-outline-variant flex items-center justify-center bg-surface-container-low">
+<span class="material-symbols-outlined text-secondary text-lg" data-icon="search">search</span>
+</div>
+<div class="font-label-caps text-[11px] text-on-surface-variant uppercase">Investigate</div>
+<div class="h-1 w-8 bg-outline-variant/30 rounded-full"></div>
+<div class="font-code-sm text-[10px] text-on-surface-variant">Exploit Proof</div>
+</div>
+
+<!-- Arrow -->
+<div class="w-8 h-px pipeline-connector"></div>
+
+<!-- Architect Node -->
+<div class="pipeline-node min-w-max p-md border border-outline-variant/50 rounded-lg flex flex-col items-center gap-sm bg-surface-container/30 hover:bg-surface-container-high/40 transition-all" data-node="architect">
+<div class="w-12 h-12 rounded-full border-2 border-outline-variant flex items-center justify-center bg-surface-container-low">
+<span class="material-symbols-outlined text-secondary text-lg" data-icon="construction">construction</span>
+</div>
+<div class="font-label-caps text-[11px] text-on-surface-variant uppercase">Architect</div>
+<div class="h-1 w-8 bg-outline-variant/30 rounded-full"></div>
+<div class="font-code-sm text-[10px] text-on-surface-variant">Generate Patch</div>
+</div>
+
+<!-- Arrow -->
+<div class="w-8 h-px pipeline-connector"></div>
+
+<!-- Verifier Node -->
+<div class="pipeline-node min-w-max p-md border border-outline-variant/50 rounded-lg flex flex-col items-center gap-sm bg-surface-container/30 hover:bg-surface-container-high/40 transition-all" data-node="verifier">
+<div class="w-12 h-12 rounded-full border-2 border-outline-variant flex items-center justify-center bg-surface-container-low">
+<span class="material-symbols-outlined text-secondary text-lg" data-icon="check_circle">check_circle</span>
+</div>
+<div class="font-label-caps text-[11px] text-on-surface-variant uppercase">Verify</div>
+<div class="h-1 w-8 bg-outline-variant/30 rounded-full"></div>
+<div class="font-code-sm text-[10px] text-on-surface-variant">Test Patch</div>
+</div>
+</div>
+</section>
+
+<!-- Main Content Grid -->
+<div class="grid grid-cols-12 gap-gutter">
+<!-- Pipeline State Data (8 columns) -->
+<section class="col-span-12 lg:col-span-8 space-y-md">
+<div class="glass-panel p-md space-y-md">
+<div class="flex items-center justify-between border-b border-outline-variant/20 pb-sm">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="info">info</span>
+<h3 class="font-display text-headline-sm text-primary">Current Execution State</h3>
+</div>
+<span class="text-on-surface-variant text-[10px] font-code-sm" id="iteration-count">Iteration: --</span>
+</div>
+<div class="grid grid-cols-2 gap-md text-sm">
+<div class="bg-surface-container-low/50 p-md rounded border border-outline-variant/20">
+<div class="font-label-caps text-[10px] text-on-surface-variant uppercase mb-sm">Target Topography</div>
+<div class="font-code-sm text-[12px] text-on-surface h-20 overflow-y-auto custom-scrollbar" id="target-topography">[Waiting for data]</div>
+</div>
+<div class="bg-surface-container-low/50 p-md rounded border border-outline-variant/20">
+<div class="font-label-caps text-[10px] text-on-surface-variant uppercase mb-sm">Current Hypothesis</div>
+<div class="font-code-sm text-[12px] text-on-surface h-20 overflow-y-auto custom-scrollbar" id="current-hypothesis">[Analyzing...]</div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-md">
+<div class="bg-surface-container-low/50 p-md rounded border border-outline-variant/20">
+<div class="font-label-caps text-[10px] text-on-surface-variant uppercase mb-sm">Exploit Proof</div>
+<div class="font-code-sm text-[12px] text-tertiary h-20 overflow-y-auto custom-scrollbar" id="exploit-proof">[Pending investigation]</div>
+</div>
+<div class="bg-surface-container-low/50 p-md rounded border border-outline-variant/20">
+<div class="font-label-caps text-[10px] text-on-surface-variant uppercase mb-sm">Captured Flag</div>
+<div class="font-code-sm text-[12px] text-tertiary h-20 overflow-y-auto custom-scrollbar" id="captured-flag">[Flag unavailable]</div>
+</div>
+</div>
+</div>
+
+<!-- Patch Diff Viewer -->
+<div class="glass-panel p-md space-y-md">
+<div class="flex items-center justify-between border-b border-outline-variant/20 pb-sm">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="code">code</span>
+<h3 class="font-display text-headline-sm text-primary">Remediation Patch</h3>
+</div>
+<span class="text-on-surface-variant text-[10px] font-code-sm" id="patch-status">Pending</span>
+</div>
+<div class="bg-surface-container-low/50 p-md rounded border border-outline-variant/20 font-code-sm text-[11px] h-64 overflow-y-auto custom-scrollbar" id="patch-diff">
+<div class="text-on-surface-variant">[Waiting for patch generation...]</div>
+</div>
+</div>
+</section>
+
+<!-- Activity Timeline (4 columns) -->
+<section class="col-span-12 lg:col-span-4 space-y-md">
+<div class="glass-panel overflow-hidden flex flex-col h-full">
+<div class="p-md border-b border-outline-variant/20">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="timeline">timeline</span>
+<h3 class="font-display text-headline-sm text-primary">Execution Timeline</h3>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto custom-scrollbar p-md space-y-sm" id="timeline">
+<div class="flex gap-md text-sm">
+<div class="w-2 h-2 rounded-full bg-outline-variant mt-1 flex-shrink-0"></div>
+<div class="text-on-surface-variant">[System] Awaiting webhook payload...</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+
+<!-- Activity Stream -->
+<section class="glass-panel p-md space-y-md">
+<div class="flex items-center justify-between border-b border-outline-variant/20 pb-sm">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="terminal">terminal</span>
+<h2 class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">Real-time Event Stream</h2>
+</div>
+<div class="flex gap-md text-[10px] font-code-sm">
+<span class="text-tertiary" id="stream-status">[INFO] Connecting...</span>
+</div>
+</div>
+<div class="space-y-sm font-code-sm text-[12px] h-40 overflow-y-auto custom-scrollbar" id="activity-stream">
+<div class="flex gap-md">
+<span class="text-outline/40">--:--</span>
+<span class="text-secondary">[System]</span>
+<span class="text-on-surface-variant">Initializing dashboard...</span>
+</div>
+</div>
+</section>
+</div>
+</main>
+</div>
+
+<div id="approval-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+  <div class="glass-panel rounded-xl p-lg w-full max-w-2xl max-h-[80vh] flex flex-col gap-md">
+    <div class="flex items-center justify-between border-b border-outline-variant/20 pb-sm">
+      <div class="flex items-center gap-sm">
+        <span class="material-symbols-outlined text-yellow-400">warning</span>
+        <h2 class="font-headline-md text-on-surface font-semibold">Human Approval Required</h2>
+      </div>
+      <span class="font-label-caps text-[10px] text-yellow-400 uppercase bg-yellow-400/10 px-sm py-xs rounded">CWE-89 · CVSS 9.8 CRITICAL</span>
+    </div>
+    <p class="text-body-sm text-on-surface-variant">The Architect agent has generated a security patch. Review the diff below and approve or reject.</p>
+    <div class="flex-1 overflow-y-auto custom-scrollbar bg-surface-container-lowest rounded p-md font-code-sm text-xs" id="patch-diff-content">
+      <p class="text-on-surface-variant">Loading patch diff...</p>
+    </div>
+    <div class="flex gap-sm justify-end pt-sm border-t border-outline-variant/20">
+      <button id="reject-btn" onclick="handleReject()" class="px-lg py-sm rounded font-label-caps text-label-caps bg-error/20 text-error hover:bg-error/30 transition-all">Reject Patch</button>
+      <button id="approve-btn" onclick="handleApprove()" class="px-lg py-sm rounded font-label-caps text-label-caps bg-tertiary/20 text-tertiary hover:bg-tertiary/30 transition-all">Approve &amp; Deploy</button>
+    </div>
+  </div>
+</div>
+
+<script>
+    const APP_STATE = {
+        totalIncidents: 0,
+        resolvedIncidents: 0,
+        responseTimes: [],
+        currentState: null,
+        activeRunId: null,
+        nodeStates: {}
+    };
+
+    // Initialize node states
+    ['ingress', 'scout', 'summarizer', 'investigator', 'architect', 'verifier'].forEach(node => {
+        APP_STATE.nodeStates[node] = 'idle'; // idle, active, completed, failed
+    });
+
+    // ── Fix 1: Orchestrator health polling ────────────────────────────────────
+    async function pollHealth() {
+        try {
+            const r = await fetch('/api/health');
+            const ok = r.ok;
+            document.getElementById('health-dot').className = ok
+                ? 'w-2 h-2 rounded-full bg-tertiary shadow-[0_0_8px_#a8ffd2]'
+                : 'w-2 h-2 rounded-full bg-error';
+            document.getElementById('health-text').textContent = ok ? 'ONLINE' : 'OFFLINE';
+        } catch {
+            document.getElementById('health-dot').className = 'w-2 h-2 rounded-full bg-error';
+            document.getElementById('health-text').textContent = 'OFFLINE';
+        }
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    function formatDate() {
+        return new Date().toLocaleTimeString('en-US', {
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    }
+
+    // ── Fix 4: Color-coded stream messages ────────────────────────────────────
+    // colorClass overrides the content span color when provided.
+    function addStreamMessage(type, content, colorClass) {
+        const streamDiv = document.getElementById('activity-stream');
+        const div = document.createElement('div');
+        div.className = 'flex gap-md';
+
+        // Timestamp with [HH:MM:SS] format
+        const timeSpan = document.createElement('span');
+        timeSpan.className = 'text-outline/40 flex-shrink-0';
+        timeSpan.innerText = '[' + formatDate() + ']';
+
+        const typeSpan = document.createElement('span');
+        typeSpan.className = 'flex-shrink-0 min-w-max';
+
+        const typeMap = {
+            'thought':      { class: 'text-primary',           text: '[Thinking]' },
+            'scout':        { class: 'text-primary',           text: '[Scout]' },
+            'investigator': { class: 'text-tertiary',          text: '[Investigator]' },
+            'architect':    { class: 'text-tertiary',          text: '[Architect]' },
+            'verifier':     { class: 'text-tertiary',          text: '[Verifier]' },
+            'tool':         { class: 'text-tertiary',          text: '[Tool Exec]' },
+            'result':       { class: 'text-on-surface-variant', text: '[Result]' },
+            'system':       { class: 'text-secondary',         text: '[System]' }
+        };
+
+        const typeConfig = typeMap[type] || typeMap.system;
+        typeSpan.className += ' ' + typeConfig.class;
+        typeSpan.innerText = typeConfig.text;
+
+        const contentSpan = document.createElement('span');
+        // Apply explicit color override when given, else default muted color
+        contentSpan.className = (colorClass || 'text-on-surface-variant') + ' truncate';
+        contentSpan.innerText = content.substring(0, 150) + (content.length > 150 ? '...' : '');
+
+        div.appendChild(timeSpan);
+        div.appendChild(typeSpan);
+        div.appendChild(contentSpan);
+
+        streamDiv.appendChild(div);
+        streamDiv.scrollTop = streamDiv.scrollHeight;
+
+        // Keep only last 50 messages
+        const messages = streamDiv.querySelectorAll('.flex');
+        if (messages.length > 50) {
+            messages[0].remove();
+        }
+    }
+
+    // ── Fix 2: Pipeline active-stage highlighting ─────────────────────────────
+    function clearAllPipelineActive() {
+        document.querySelectorAll('.pipeline-node').forEach(n => {
+            n.classList.remove('active', 'pulse-ring');
+        });
+    }
+
+    function updatePipelineNode(nodeName, state) {
+        const node = document.querySelector(`.pipeline-node[data-node="${nodeName}"]`);
+        if (!node) return;
+
+        node.classList.remove('active', 'pulse-ring', 'completed', 'failed');
+        if (state === 'active') {
+            // First clear any other active node so only one glows at a time
+            clearAllPipelineActive();
+            node.classList.add('active', 'pulse-ring');
+        } else if (state === 'completed') {
+            node.classList.add('completed');
+        } else if (state === 'failed') {
+            node.classList.add('failed');
+        }
+    }
+
+    function updateMetrics(data) {
+        if (data.status) {
+            document.getElementById('current-status').innerText = data.status;
+            document.getElementById('pipeline-badge').innerText = data.status;
+        }
+        if (data.iteration_count) {
+            document.getElementById('iteration-count').innerText = `Iteration: ${data.iteration_count}`;
+        }
+    }
+
+    function updateStateData(data) {
+        if (data.target_topography) {
+            document.getElementById('target-topography').innerText = data.target_topography || '[N/A]';
+        }
+        if (data.current_hypothesis) {
+            document.getElementById('current-hypothesis').innerText = data.current_hypothesis || '[N/A]';
+        }
+        if (data.exploit_proof) {
+            document.getElementById('exploit-proof').innerText = data.exploit_proof || '[N/A]';
+        }
+        if (data.captured_flag) {
+            document.getElementById('captured-flag').innerText = data.captured_flag || '[N/A]';
+        }
+        if (data.remediation_patch) {
+            displayPatch(data.remediation_patch);
+        }
+    }
+
+    function displayPatch(patchDiff) {
+        const diffDiv = document.getElementById('patch-diff');
+        diffDiv.innerHTML = '';
+
+        const lines = patchDiff.split('\n');
+        lines.forEach(line => {
+            const lineDiv = document.createElement('div');
+            if (line.startsWith('+') && !line.startsWith('+++')) {
+                lineDiv.className = 'diff-add';
+            } else if (line.startsWith('-') && !line.startsWith('---')) {
+                lineDiv.className = 'diff-remove';
+            } else {
+                lineDiv.className = 'diff-neutral';
+            }
+            lineDiv.innerText = line;
+            diffDiv.appendChild(lineDiv);
+        });
+    }
+
+    function addTimelineEntry(node, status) {
+        const timeline = document.getElementById('timeline');
+        const entry = document.createElement('div');
+        entry.className = 'flex gap-md text-sm';
+
+        const dot = document.createElement('div');
+        if (status === 'active') {
+            dot.className = 'w-2 h-2 rounded-full bg-primary mt-1 flex-shrink-0 pulse-ring';
+        } else if (status === 'completed') {
+            dot.className = 'w-2 h-2 rounded-full bg-tertiary mt-1 flex-shrink-0';
+        } else {
+            dot.className = 'w-2 h-2 rounded-full bg-outline-variant mt-1 flex-shrink-0';
+        }
+
+        const text = document.createElement('div');
+        text.className = 'text-on-surface-variant text-xs';
+        const nodeNames = {
+            'scout':        'Scout: Collecting topography...',
+            'investigator': 'Investigator: Testing exploits...',
+            'architect':    'Architect: Generating patches...',
+            'verifier':     'Verifier: Testing patches...'
+        };
+        text.innerText = nodeNames[node] || `${node}: Processing...`;
+
+        entry.appendChild(dot);
+        entry.appendChild(text);
+        timeline.appendChild(entry);
+        timeline.scrollTop = timeline.scrollHeight;
+    }
+
+    // ── Fix 3: Auto-select newest run after trigger ───────────────────────────
+    function selectRun(traceId) {
+        if (!traceId) return;
+        APP_STATE.activeRunId = traceId;
+
+        // Update status display to reflect the new run
+        document.getElementById('current-status').innerText = 'RUNNING';
+        document.getElementById('pipeline-badge').innerText = 'RUNNING';
+        document.getElementById('iteration-count').innerText = `Run: ${traceId}`;
+        document.getElementById('status-detail').innerText = `Active run: ${traceId}`;
+
+        // Reset pipeline nodes to idle for fresh run
+        ['ingress', 'scout', 'summarizer', 'investigator', 'architect', 'verifier'].forEach(node => {
+            updatePipelineNode(node, 'idle');
+            APP_STATE.nodeStates[node] = 'idle';
+        });
+
+        addStreamMessage('system', `Auto-selected new run: ${traceId}`, 'text-tertiary');
+
+        // Highlight the ingress node as the run starts
+        updatePipelineNode('ingress', 'active');
+    }
+
+    // Attach trigger button handler (works whether the button exists now or is added later)
+    function attachTriggerHandler() {
+        const triggerBtn = document.getElementById('trigger-btn');
+        if (!triggerBtn) return;
+        triggerBtn.addEventListener('click', async () => {
+            try {
+                const resp = await fetch('/api/trigger', { method: 'POST' });
+                if (resp.ok) {
+                    const result = await resp.json();
+                    const traceId = result.trace_id || result.id || result.run_id;
+                    if (traceId) selectRun(traceId);
+                }
+            } catch (e) {
+                console.error('Trigger failed:', e);
+            }
+        });
+    }
+
+    // ── Approval modal ────────────────────────────────────────────────────────
+    let _pendingTraceId = null;
+
+    async function showApprovalModal(traceId) {
+      _pendingTraceId = traceId;
+      document.getElementById('approval-modal').classList.remove('hidden');
+      // Try to fetch patch content from status endpoint
+      try {
+        const r = await fetch(`/api/status/${traceId}`);
+        const data = await r.json();
+        const content = data.remediation_patch || data.patch || '(patch content not available in status — see orchestrator logs)';
+        renderPatchDiff(content);
+      } catch(e) {
+        document.getElementById('patch-diff-content').innerHTML = '<p class="text-error">Could not load patch content.</p>';
+      }
+    }
+
+    function renderPatchDiff(content) {
+      const lines = content.split('\n');
+      const html = lines.map(l => {
+        if (l.startsWith('+')) return `<div class="diff-add">+ ${escapeHtml(l.slice(1))}</div>`;
+        if (l.startsWith('-')) return `<div class="diff-remove">- ${escapeHtml(l.slice(1))}</div>`;
+        return `<div class="diff-neutral">&nbsp; ${escapeHtml(l)}</div>`;
+      }).join('');
+      document.getElementById('patch-diff-content').innerHTML = html || '<p class="text-on-surface-variant">No patch content.</p>';
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    async function handleApprove() {
+      if (!_pendingTraceId) return;
+      await fetch(`/api/approve/${_pendingTraceId}`, { method: 'POST' });
+      document.getElementById('approval-modal').classList.add('hidden');
+    }
+
+    async function handleReject() {
+      if (!_pendingTraceId) return;
+      await fetch(`/api/reject/${_pendingTraceId}`, { method: 'POST' });
+      document.getElementById('approval-modal').classList.add('hidden');
+    }
+
+    // ── WebSocket connection ──────────────────────────────────────────────────
+    let wsConnected = false;
+    const connectWebSocket = () => {
+        try {
+            const ws = new WebSocket('ws://localhost:8000/ws');
+
+            ws.onopen = () => {
+                wsConnected = true;
+                document.getElementById('stream-status').innerText = '[INFO] Connected to Chimera';
+                document.getElementById('stream-status').className = 'text-tertiary';
+                addStreamMessage('system', 'WebSocket connected to Chimera MCP server');
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+
+                    // ── Fix 4 + Fix 2: event-type driven coloring & node highlighting ──
+
+                    if (data.event === 'alert_received') {
+                        APP_STATE.totalIncidents++;
+                        document.getElementById('total-incidents').innerText = APP_STATE.totalIncidents;
+                        // Fix 4: alert → yellow/amber
+                        addStreamMessage('system', `Alert received: ${data.data && data.data.type ? data.data.type : 'unknown'}`, 'text-yellow-400');
+                        updatePipelineNode('ingress', 'active');
+                        addTimelineEntry('ingress', 'active');
+                    }
+                    else if (data.event === 'pipeline_step') {
+                        // Fix 2: highlight the active node
+                        const stepData = data.data;
+                        // Determine node name from top-level key
+                        const nodeName = Object.keys(stepData)[0];
+                        if (nodeName) {
+                            // Clear all active highlights, set this one active
+                            clearAllPipelineActive();
+                            updatePipelineNode(nodeName, 'active');
+                            addTimelineEntry(nodeName, 'active');
+                        }
+
+                        // Process all keys for state updates
+                        Object.keys(stepData).forEach(node => {
+                            const nodeData = stepData[node];
+                            if (nodeData && nodeData.status === 'completed') {
+                                updatePipelineNode(node, 'completed');
+                                addTimelineEntry(node, 'completed');
+                            }
+                            if (nodeData) {
+                                updateStateData(nodeData);
+                            }
+                            // Show approval modal when human_approval step is reached
+                            if (node === 'human_approval' || (nodeData && nodeData.status === 'awaiting_approval')) {
+                                const traceId = (nodeData && nodeData.trace_id) || APP_STATE.activeRunId;
+                                addStreamMessage('system', 'Awaiting human approval for patch deployment', 'text-yellow-400');
+                                document.getElementById('current-status').innerText = 'AWAITING APPROVAL';
+                                document.getElementById('pipeline-badge').innerText = 'AWAITING APPROVAL';
+                                showApprovalModal(traceId);
+                            }
+                        });
+                        updateMetrics(stepData);
+
+                        // Fix 4: pipeline_step → cyan
+                        addStreamMessage(nodeName || 'system', `Pipeline step: ${nodeName || 'processing'}`, 'text-cyan-400');
+                    }
+                    else if (data.event === 'pipeline_complete') {
+                        const status = (data.data && data.data.status) || data.status || 'resolved';
+
+                        // Show approval modal when pipeline pauses for human review
+                        if (status === 'awaiting_approval') {
+                            const traceId = (data.data && data.data.trace_id) || APP_STATE.activeRunId;
+                            addStreamMessage('system', 'Awaiting human approval for patch deployment', 'text-yellow-400');
+                            document.getElementById('current-status').innerText = 'AWAITING APPROVAL';
+                            document.getElementById('pipeline-badge').innerText = 'AWAITING APPROVAL';
+                            showApprovalModal(traceId);
+                            return;
+                        }
+
+                        APP_STATE.resolvedIncidents++;
+                        document.getElementById('resolved-count').innerText = `${APP_STATE.resolvedIncidents} Resolved`;
+                        document.getElementById('current-status').innerText = 'COMPLETED';
+
+                        const isSuccess = status === 'resolved';
+                        const isFailed = status === 'failed' || status === 'rejected';
+
+                        // Fix 2: mark all nodes completed or failed
+                        clearAllPipelineActive();
+                        ['ingress', 'scout', 'summarizer', 'investigator', 'architect', 'verifier'].forEach(node => {
+                            updatePipelineNode(node, isFailed ? 'failed' : 'completed');
+                        });
+
+                        addTimelineEntry('verifier', 'completed');
+
+                        // Fix 4: resolved → green, failed/rejected → red
+                        const completeColor = isSuccess ? 'text-green-400' : (isFailed ? 'text-red-400' : 'text-green-400');
+                        addStreamMessage('system', `Pipeline ${isSuccess ? 'resolved' : 'completed'} [${status}]`, completeColor);
+                    }
+                    else if (data.event === 'pipeline_error') {
+                        // Fix 4: pipeline_error → red
+                        addStreamMessage('system', `Error: ${data.error || 'unknown error'}`, 'text-red-400');
+                        clearAllPipelineActive();
+                        updatePipelineNode('verifier', 'failed');
+                    }
+                    else if (data.event === 'human_approved') {
+                        // Fix 4: human_approved → green
+                        addStreamMessage('system', `Human approved: ${data.data ? JSON.stringify(data.data).substring(0, 80) : ''}`, 'text-green-400');
+                    }
+                    else if (data.event === 'human_rejected') {
+                        // Fix 4: human_rejected → red
+                        addStreamMessage('system', `Human rejected: ${data.data ? JSON.stringify(data.data).substring(0, 80) : ''}`, 'text-red-400');
+                    }
+
+                } catch (e) {
+                    console.error('Error parsing message:', e);
+                }
+            };
+
+            ws.onerror = (error) => {
+                wsConnected = false;
+                document.getElementById('stream-status').innerText = '[ERROR] Connection failed';
+                document.getElementById('stream-status').className = 'text-error';
+                addStreamMessage('system', 'WebSocket error - retrying...');
+            };
+
+            ws.onclose = () => {
+                wsConnected = false;
+                document.getElementById('stream-status').innerText = '[OFFLINE] Disconnected';
+                document.getElementById('stream-status').className = 'text-outline';
+                // Attempt reconnect after 3 seconds
+                setTimeout(connectWebSocket, 3000);
+            };
+
+        } catch (e) {
+            console.error('WebSocket error:', e);
+        }
+    };
+
+    // ── Initialize ────────────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+        connectWebSocket();
+        addStreamMessage('system', 'Dashboard initialized. Connecting to Chimera server...');
+        attachTriggerHandler();
+
+        // Fix 1: start health polling
+        pollHealth();
+        setInterval(pollHealth, 5000);
+    });
+</script>
+</body></html>

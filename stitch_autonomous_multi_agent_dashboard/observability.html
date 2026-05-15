@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CHIMERA — Metrics</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist:wght@500;600;700&family=JetBrains+Mono:wght@400&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+tailwind.config = {
+  darkMode:"class",
+  theme:{extend:{
+    colors:{"background":"#0b1326","on-secondary":"#213145","tertiary-container":"#5be9ad","on-primary-fixed-variant":"#004f58","on-tertiary-container":"#006645","on-tertiary":"#003824","on-secondary-container":"#a9bad3","secondary":"#b7c8e1","on-tertiary-fixed":"#002113","tertiary":"#a8ffd2","surface-container":"#171f33","error-container":"#93000a","primary-fixed":"#9cf0ff","surface-container-low":"#131b2e","on-error":"#690005","outline-variant":"#3b494c","surface":"#0b1326","secondary-fixed":"#d3e4fe","inverse-on-surface":"#283044","surface-dim":"#0b1326","surface-tint":"#00daf3","on-secondary-fixed":"#0b1c30","outline":"#849396","on-primary-container":"#00626e","inverse-surface":"#dae2fd","primary-container":"#00e5ff","tertiary-fixed-dim":"#4edea3","on-surface-variant":"#bac9cc","on-secondary-fixed-variant":"#38485d","primary":"#c3f5ff","surface-bright":"#31394d","inverse-primary":"#006875","error":"#ffb4ab","secondary-container":"#3a4a5f","on-surface":"#dae2fd","on-background":"#dae2fd","on-tertiary-fixed-variant":"#005236","surface-container-highest":"#2d3449","surface-container-lowest":"#060e20","on-primary-fixed":"#001f24","on-error-container":"#ffdad6","secondary-fixed-dim":"#b7c8e1","surface-container-high":"#222a3d","on-primary":"#00363d","tertiary-fixed":"#6ffbbe","surface-variant":"#2d3449","primary-fixed-dim":"#00daf3"},
+    borderRadius:{"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"},
+    spacing:{"base":"4px","gutter":"20px","xs":"4px","margin-mobile":"16px","margin-desktop":"32px","sm":"8px","md":"16px","xl":"40px","lg":"24px"},
+    fontFamily:{"body-sm":["Inter"],"display":["Geist"],"headline-lg":["Geist"],"headline-md":["Geist"],"body-md":["Inter"],"body-lg":["Inter"],"headline-sm":["Geist"],"headline-lg-mobile":["Geist"],"label-caps":["Geist"],"code-sm":["JetBrains Mono"]},
+    fontSize:{"body-sm":["14px",{"lineHeight":"1.5","fontWeight":"400"}],"display":["48px",{"lineHeight":"1.1","letterSpacing":"-0.02em","fontWeight":"700"}],"headline-lg":["32px",{"lineHeight":"1.2","letterSpacing":"-0.01em","fontWeight":"600"}],"headline-md":["24px",{"lineHeight":"1.3","fontWeight":"600"}],"body-md":["16px",{"lineHeight":"1.6","fontWeight":"400"}],"body-lg":["18px",{"lineHeight":"1.6","fontWeight":"400"}],"headline-sm":["20px",{"lineHeight":"1.4","fontWeight":"500"}],"headline-lg-mobile":["24px",{"lineHeight":"1.2","fontWeight":"600"}],"label-caps":["12px",{"lineHeight":"1","letterSpacing":"0.05em","fontWeight":"700"}],"code-sm":["13px",{"lineHeight":"1.4","fontWeight":"400"}]}
+  }}
+}
+</script>
+<style>
+.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}
+.glass-card{background:rgba(23,31,51,0.4);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.1)}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#3b494c;border-radius:10px}
+</style>
+</head>
+<body class="bg-background text-on-background font-body-md overflow-hidden h-screen flex flex-col">
+
+<header class="flex justify-between items-center w-full px-margin-desktop h-16 sticky top-0 z-50 bg-surface/40 backdrop-blur-md border-b border-outline-variant/30 shrink-0">
+  <div class="flex items-center gap-lg">
+    <span class="font-display text-headline-md font-bold text-primary tracking-tight">CHIMERA</span>
+    <span class="font-label-caps text-label-caps text-on-surface-variant">/ Metrics</span>
+  </div>
+  <div class="flex items-center gap-md">
+    <span class="font-code-sm text-[11px] text-on-surface-variant">Last updated: <span id="last-updated">—</span></span>
+    <button onclick="loadMetrics()" class="glass-card px-md py-sm rounded flex items-center gap-sm font-label-caps text-label-caps text-primary hover:brightness-110 transition-colors border border-primary/20">
+      <span class="material-symbols-outlined text-[16px]">refresh</span> Refresh
+    </button>
+  </div>
+</header>
+
+<div class="flex flex-1 overflow-hidden">
+  <aside class="hidden md:flex flex-col h-full py-lg gap-md bg-surface-container-low/60 backdrop-blur-xl border-r border-outline-variant/20 w-56 shrink-0">
+    <div class="px-lg pb-md">
+      <div class="flex items-center gap-sm">
+        <div class="w-8 h-8 bg-error/20 rounded flex items-center justify-center border border-error/30">
+          <span class="material-symbols-outlined text-[20px] text-error">security</span>
+        </div>
+        <div>
+          <div class="font-display text-headline-sm font-bold text-primary">Chimera</div>
+          <div class="font-label-caps text-label-caps text-on-surface-variant">Autonomous SecOps</div>
+        </div>
+      </div>
+    </div>
+    <nav class="flex-1 px-sm space-y-1">
+      <a class="flex items-center gap-md px-md py-2.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all rounded" href="index.html">
+        <span class="material-symbols-outlined">dashboard</span>
+        <span class="font-label-caps text-label-caps">Command Center</span>
+      </a>
+      <a class="flex items-center gap-md px-md py-2.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all rounded" href="orchestration.html">
+        <span class="material-symbols-outlined">account_tree</span>
+        <span class="font-label-caps text-label-caps">Pipeline</span>
+      </a>
+      <a class="flex items-center gap-md px-md py-2.5 text-primary border-r-2 border-primary bg-primary/5 transition-all rounded translate-x-1" href="observability.html">
+        <span class="material-symbols-outlined">analytics</span>
+        <span class="font-label-caps text-label-caps">Metrics</span>
+      </a>
+      <a class="flex items-center gap-md px-md py-2.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all rounded" href="logs.html">
+        <span class="material-symbols-outlined">terminal</span>
+        <span class="font-label-caps text-label-caps">Event Stream</span>
+      </a>
+    </nav>
+  </aside>
+
+  <main class="flex-1 overflow-y-auto p-lg bg-surface-container-lowest relative">
+    <div class="fixed inset-0 pointer-events-none opacity-5 z-0" style="background-image:linear-gradient(#849396 1px,transparent 1px),linear-gradient(90deg,#849396 1px,transparent 1px);background-size:40px 40px"></div>
+    <div class="relative z-10">
+
+      <!-- Top KPIs -->
+      <div class="grid grid-cols-2 lg:grid-cols-5 gap-md mb-lg">
+        <div class="glass-card p-md rounded-xl">
+          <div class="font-label-caps text-label-caps text-on-surface-variant mb-sm">Total Runs</div>
+          <div class="font-display text-headline-md text-on-surface" id="m-total">—</div>
+        </div>
+        <div class="glass-card p-md rounded-xl">
+          <div class="font-label-caps text-label-caps text-on-surface-variant mb-sm">Resolved</div>
+          <div class="font-display text-headline-md text-on-surface" id="m-resolved" style="color:#a8ffd2">—</div>
+        </div>
+        <div class="glass-card p-md rounded-xl">
+          <div class="font-label-caps text-label-caps text-on-surface-variant mb-sm">Failed</div>
+          <div class="font-display text-headline-md text-on-surface" id="m-failed" style="color:#ffb4ab">—</div>
+        </div>
+        <div class="glass-card p-md rounded-xl">
+          <div class="font-label-caps text-label-caps text-on-surface-variant mb-sm">Active</div>
+          <div class="font-display text-headline-md text-on-surface" id="m-active" style="color:#c3f5ff">—</div>
+        </div>
+        <div class="glass-card p-md rounded-xl">
+          <div class="font-label-caps text-label-caps text-on-surface-variant mb-sm">Flag Rate</div>
+          <div class="font-display text-headline-md text-on-surface" id="m-flag-rate" style="color:#a8ffd2">—</div>
+        </div>
+      </div>
+
+      <!-- Charts row -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-md mb-md">
+
+        <!-- Resolved vs Failed -->
+        <div class="glass-card rounded-xl p-md">
+          <h2 class="font-headline-sm text-on-surface mb-xs">Outcome Breakdown</h2>
+          <p class="font-body-sm text-[12px] text-on-surface-variant mb-md">Pipeline run outcomes</p>
+          <div class="space-y-md">
+            <div>
+              <div class="flex justify-between mb-xs">
+                <span class="font-label-caps text-[10px] text-on-surface-variant">Resolved</span>
+                <span class="font-code-sm text-[11px]" style="color:#a8ffd2" id="bar-resolved-val">—</span>
+              </div>
+              <div class="w-full h-2 rounded-full" style="background:rgba(59,73,76,0.4)">
+                <div id="bar-resolved" class="h-full rounded-full transition-all duration-700" style="background:#a8ffd2;width:0%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between mb-xs">
+                <span class="font-label-caps text-[10px] text-on-surface-variant">Failed</span>
+                <span class="font-code-sm text-[11px]" style="color:#ffb4ab" id="bar-failed-val">—</span>
+              </div>
+              <div class="w-full h-2 rounded-full" style="background:rgba(59,73,76,0.4)">
+                <div id="bar-failed" class="h-full rounded-full transition-all duration-700" style="background:#ffb4ab;width:0%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between mb-xs">
+                <span class="font-label-caps text-[10px] text-on-surface-variant">Active</span>
+                <span class="font-code-sm text-[11px]" style="color:#c3f5ff" id="bar-active-val">—</span>
+              </div>
+              <div class="w-full h-2 rounded-full" style="background:rgba(59,73,76,0.4)">
+                <div id="bar-active" class="h-full rounded-full transition-all duration-700" style="background:#c3f5ff;width:0%"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Donut SVG -->
+          <div class="flex items-center gap-lg mt-xl">
+            <svg width="100" height="100" viewBox="0 0 36 36" id="donut-svg">
+              <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(59,73,76,0.4)" stroke-width="3.8"/>
+              <circle id="donut-resolved" cx="18" cy="18" r="15.9" fill="none" stroke="#a8ffd2" stroke-width="3.8" stroke-dasharray="0 100" stroke-linecap="round" transform="rotate(-90 18 18)" style="transition:stroke-dasharray 0.7s ease"/>
+              <circle id="donut-failed" cx="18" cy="18" r="15.9" fill="none" stroke="#ffb4ab" stroke-width="3.8" stroke-dasharray="0 100" stroke-linecap="round" transform="rotate(-90 18 18)" style="transition:stroke-dasharray 0.7s ease"/>
+              <text x="18" y="20" text-anchor="middle" style="font-size:6px;fill:#dae2fd;font-family:Geist" id="donut-label">—</text>
+            </svg>
+            <div class="space-y-sm">
+              <div class="flex items-center gap-sm"><span class="w-3 h-3 rounded-sm" style="background:#a8ffd2"></span><span class="font-label-caps text-[10px] text-on-surface-variant">Resolved</span></div>
+              <div class="flex items-center gap-sm"><span class="w-3 h-3 rounded-sm" style="background:#ffb4ab"></span><span class="font-label-caps text-[10px] text-on-surface-variant">Failed</span></div>
+              <div class="flex items-center gap-sm"><span class="w-3 h-3 rounded-sm" style="background:#c3f5ff"></span><span class="font-label-caps text-[10px] text-on-surface-variant">Active</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Run duration histogram -->
+        <div class="glass-card rounded-xl p-md">
+          <h2 class="font-headline-sm text-on-surface mb-xs">Run Duration</h2>
+          <p class="font-body-sm text-[12px] text-on-surface-variant mb-md">From alert receipt to resolution (seconds)</p>
+          <div class="space-y-sm">
+            <div class="flex justify-between items-center mb-xs">
+              <span class="font-label-caps text-[10px] text-on-surface-variant">Average</span>
+              <span class="font-code-sm text-[12px]" style="color:#c3f5ff" id="dur-avg">—</span>
+            </div>
+            <div class="flex justify-between items-center mb-xs">
+              <span class="font-label-caps text-[10px] text-on-surface-variant">Total time</span>
+              <span class="font-code-sm text-[12px]" style="color:#c3f5ff" id="dur-sum">—</span>
+            </div>
+            <div class="flex justify-between items-center mb-xs">
+              <span class="font-label-caps text-[10px] text-on-surface-variant">Sample count</span>
+              <span class="font-code-sm text-[12px] text-on-surface-variant" id="dur-count">—</span>
+            </div>
+          </div>
+
+          <!-- Duration histogram bars from bucket data -->
+          <div class="mt-md pt-md border-t border-outline-variant/20">
+            <div class="font-label-caps text-[10px] text-on-surface-variant mb-sm">Duration Distribution</div>
+            <div class="flex items-end gap-1 h-20" id="dur-histogram">
+              <div class="font-code-sm text-[10px] text-on-surface-variant">No data</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Iterations + Flag capture rate row -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-md mb-md">
+
+        <!-- Iterations per run -->
+        <div class="glass-card rounded-xl p-md">
+          <h2 class="font-headline-sm text-on-surface mb-xs">Iterations per Run</h2>
+          <p class="font-body-sm text-[12px] text-on-surface-variant mb-md">Investigator→Sandbox loop count</p>
+          <div class="space-y-sm">
+            <div class="flex justify-between items-center">
+              <span class="font-label-caps text-[10px] text-on-surface-variant">Average iterations</span>
+              <span class="font-code-sm text-[12px]" style="color:#c3f5ff" id="iter-avg">—</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="font-label-caps text-[10px] text-on-surface-variant">Total iterations</span>
+              <span class="font-code-sm text-[12px] text-on-surface-variant" id="iter-sum">—</span>
+            </div>
+          </div>
+          <div class="mt-md flex items-end gap-1 h-16" id="iter-histogram">
+            <div class="font-code-sm text-[10px] text-on-surface-variant">No data</div>
+          </div>
+        </div>
+
+        <!-- Flag capture rate gauge -->
+        <div class="glass-card rounded-xl p-md">
+          <h2 class="font-headline-sm text-on-surface mb-xs">Flag Capture Rate</h2>
+          <p class="font-body-sm text-[12px] text-on-surface-variant mb-md">% of runs where SQLi exploit succeeded</p>
+          <div class="flex items-center justify-center py-md">
+            <svg width="160" height="90" viewBox="0 0 200 110">
+              <!-- Gauge background arc -->
+              <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="rgba(59,73,76,0.5)" stroke-width="14" stroke-linecap="round"/>
+              <!-- Gauge fill arc -->
+              <path id="gauge-fill" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#a8ffd2" stroke-width="14" stroke-linecap="round" stroke-dasharray="0 251.2" style="transition:stroke-dasharray 0.8s ease"/>
+              <!-- Needle -->
+              <line id="gauge-needle" x1="100" y1="100" x2="100" y2="30" stroke="#c3f5ff" stroke-width="2" stroke-linecap="round" transform="rotate(0 100 100)" style="transition:transform 0.8s ease"/>
+              <circle cx="100" cy="100" r="5" fill="#c3f5ff"/>
+              <!-- Labels -->
+              <text x="20" y="115" style="font-size:9px;fill:#849396;font-family:JetBrains Mono">0%</text>
+              <text x="178" y="115" style="font-size:9px;fill:#849396;font-family:JetBrains Mono" text-anchor="end">100%</text>
+              <text x="100" y="80" text-anchor="middle" style="font-size:18px;fill:#a8ffd2;font-family:Geist;font-weight:700" id="gauge-val">—</text>
+            </svg>
+          </div>
+          <div id="gauge-msg" class="text-center font-body-sm text-[12px] text-on-surface-variant">Loading…</div>
+        </div>
+
+      </div>
+
+      <!-- Raw metrics dump -->
+      <div class="glass-card rounded-xl p-md">
+        <div class="flex items-center justify-between mb-md">
+          <h2 class="font-headline-sm text-on-surface">Raw Prometheus Metrics</h2>
+          <button onclick="toggleRaw()" class="font-label-caps text-label-caps text-on-surface-variant hover:text-on-surface">toggle</button>
+        </div>
+        <pre id="raw-metrics" class="hidden font-code-sm text-[10px] text-on-surface-variant overflow-x-auto" style="max-height:200px">Loading…</pre>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+const API = 'http://localhost:3001';
+let rawMetricsText = '';
+
+function toggleRaw() {
+  const el = document.getElementById('raw-metrics');
+  el.classList.toggle('hidden');
+  if (!el.classList.contains('hidden')) el.textContent = rawMetricsText || 'No data';
+}
+
+async function loadMetrics() {
+  try {
+    const [metricsText, tracesRes] = await Promise.allSettled([
+      fetch(`${API}/api/metrics`).then(r => r.text()),
+      fetch(`${API}/api/traces`).then(r => r.json()),
+    ]);
+
+    if (metricsText.status === 'fulfilled') {
+      rawMetricsText = metricsText.value;
+      const m = parsePrometheus(metricsText.value);
+      applyMetrics(m, metricsText.value);
+    }
+
+    // Augment from traces for run counts if metrics not available
+    if (tracesRes.status === 'fulfilled') {
+      augmentFromTraces(tracesRes.value?.traces || []);
+    }
+
+    document.getElementById('last-updated').textContent = new Date().toLocaleTimeString('en-US', {hour12:false});
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+function parsePrometheus(text) {
+  const out = {};
+  const buckets = {};
+  for (const line of text.split('\n')) {
+    if (line.startsWith('#') || !line.trim()) continue;
+    // Handle bucket lines like: chimera_run_duration_seconds_bucket{le="30"} 2
+    const bm = line.match(/^(\w+)_bucket\{[^}]*le="([^"]+)"[^}]*\}\s+([\d.]+)/);
+    if (bm) {
+      const [, name, le, val] = bm;
+      if (!buckets[name]) buckets[name] = [];
+      buckets[name].push({ le: le === '+Inf' ? Infinity : parseFloat(le), count: parseFloat(val) });
+      continue;
+    }
+    const m = line.match(/^(\w+)(?:\{[^}]*\})?\s+([\d.e+\-]+)/i);
+    if (m) {
+      const v = parseFloat(m[2]);
+      if (!isNaN(v)) out[m[1]] = (out[m[1]] || 0) + v;
+    }
+  }
+  out._buckets = buckets;
+  return out;
+}
+
+function applyMetrics(m, raw) {
+  const total = (m.chimera_runs_total || 0);
+  const resolved = (m.chimera_runs_resolved_total || 0);
+  const failed = (m.chimera_runs_failed_total || 0);
+  const active = (m.chimera_active_runs || 0);
+  const flagRate = m.chimera_flag_capture_rate;
+  const durSum = m.chimera_run_duration_seconds_sum;
+  const durCount = m.chimera_run_duration_seconds_count;
+  const iterSum = m.chimera_iterations_per_run_sum;
+  const iterCount = m.chimera_iterations_per_run_count;
+
+  setText('m-total', total || '—');
+  setText('m-resolved', resolved || '—');
+  setText('m-failed', failed || '—');
+  setText('m-active', active || '—');
+
+  // Outcome bars
+  const denom = total || 1;
+  setText('bar-resolved-val', resolved);
+  setText('bar-failed-val', failed);
+  setText('bar-active-val', active);
+  setWidth('bar-resolved', resolved / denom * 100);
+  setWidth('bar-failed', failed / denom * 100);
+  setWidth('bar-active', active / denom * 100);
+
+  // Donut
+  const perim = 100;
+  const resolvedArc = total > 0 ? (resolved / total * perim) : 0;
+  const failedArc = total > 0 ? (failed / total * perim) : 0;
+  const failedOffset = perim - resolvedArc;
+  document.getElementById('donut-resolved').setAttribute('stroke-dasharray', `${resolvedArc} ${perim - resolvedArc}`);
+  document.getElementById('donut-failed').setAttribute('stroke-dasharray', `${failedArc} ${perim - failedArc}`);
+  document.getElementById('donut-failed').setAttribute('stroke-dashoffset', `-${resolvedArc}`);
+  document.getElementById('donut-label').textContent = total > 0 ? `${total}` : '—';
+
+  // Duration
+  if (durCount > 0 && durSum != null) {
+    const avg = durSum / durCount;
+    setText('dur-avg', avg.toFixed(1) + 's');
+    setText('dur-sum', durSum.toFixed(0) + 's');
+  }
+  setText('dur-count', durCount ?? '—');
+
+  // Duration histogram from buckets
+  if (m._buckets && m._buckets.chimera_run_duration_seconds) {
+    renderHistogram('dur-histogram', m._buckets.chimera_run_duration_seconds, '#c3f5ff');
+  }
+
+  // Iterations
+  if (iterCount > 0 && iterSum != null) {
+    const avgIter = iterSum / iterCount;
+    setText('iter-avg', avgIter.toFixed(1));
+    setText('iter-sum', iterSum.toFixed(0));
+  }
+  if (m._buckets && m._buckets.chimera_iterations_per_run) {
+    renderHistogram('iter-histogram', m._buckets.chimera_iterations_per_run, '#b7c8e1');
+  }
+
+  // Flag capture gauge
+  if (flagRate != null) {
+    const pct = Math.round(flagRate * 100);
+    setText('m-flag-rate', pct + '%');
+    setText('gauge-val', pct + '%');
+
+    // Arc: total arc length of the background path ≈ π * r = π * 80 ≈ 251
+    const arcLen = 251.2;
+    const fillLen = pct / 100 * arcLen;
+    document.getElementById('gauge-fill').setAttribute('stroke-dasharray', `${fillLen} ${arcLen}`);
+
+    // Needle rotation: -90deg (0%) to +90deg (100%)
+    const angle = -90 + pct * 1.8;
+    document.getElementById('gauge-needle').setAttribute('transform', `rotate(${angle} 100 100)`);
+
+    const msg = pct >= 80 ? 'Excellent — exploit reliably succeeds' :
+                pct >= 50 ? 'Good — exploit usually succeeds' :
+                pct > 0   ? 'Partial — some runs fail to exploit' :
+                            'No successful exploits recorded';
+    setText('gauge-msg', msg);
+  } else {
+    setText('m-flag-rate', '—');
+    setText('gauge-val', '—');
+    setText('gauge-msg', 'No flag capture data available');
+  }
+}
+
+function augmentFromTraces(traces) {
+  if (!traces.length) return;
+  const total = traces.length;
+  const resolved = traces.filter(t => t.status === 'resolved').length;
+  const failed = traces.filter(t => t.status === 'failed').length;
+  const active = traces.filter(t => !['resolved','failed','rejected'].includes(t.status||'')).length;
+  const withFlag = traces.filter(t => t.has_flag).length;
+
+  // Only update DOM if metrics endpoint didn't provide values
+  if (document.getElementById('m-total').textContent === '—') setText('m-total', total);
+  if (document.getElementById('m-resolved').textContent === '—') setText('m-resolved', resolved);
+  if (document.getElementById('m-failed').textContent === '—') setText('m-failed', failed);
+  if (document.getElementById('m-active').textContent === '—') setText('m-active', active);
+  if (document.getElementById('m-flag-rate').textContent === '—' && total > 0) {
+    const rate = Math.round(withFlag/total*100);
+    setText('m-flag-rate', rate+'%');
+    setText('gauge-val', rate+'%');
+    const arcLen = 251.2;
+    document.getElementById('gauge-fill').setAttribute('stroke-dasharray', `${rate/100*arcLen} ${arcLen}`);
+    const angle = -90 + rate * 1.8;
+    document.getElementById('gauge-needle').setAttribute('transform', `rotate(${angle} 100 100)`);
+  }
+}
+
+function renderHistogram(containerId, buckets, color) {
+  const container = document.getElementById(containerId);
+  if (!container || !buckets || buckets.length < 2) return;
+  // Convert cumulative buckets to per-bucket counts
+  const bars = [];
+  let prev = 0;
+  for (const b of buckets) {
+    if (b.le === Infinity) continue;
+    bars.push({ le: b.le, count: b.count - prev });
+    prev = b.count;
+  }
+  if (!bars.length) return;
+  const max = Math.max(...bars.map(b => b.count), 1);
+  container.innerHTML = bars.map(b => {
+    const pct = (b.count / max * 100).toFixed(0);
+    const label = b.le >= 1000 ? `${b.le/60}m` : `${b.le}s`;
+    return `<div class="flex flex-col items-center flex-1 gap-xs" title="${b.count} runs ≤${label}">
+      <div class="w-full rounded-sm transition-all duration-700" style="height:${pct}%;background:${color};opacity:${0.5 + b.count/max*0.5};min-height:2px"></div>
+      <span style="font-size:8px;color:#849396;font-family:JetBrains Mono">${label}</span>
+    </div>`;
+  }).join('');
+}
+
+function setText(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
+function setWidth(id, pct) { const el = document.getElementById(id); if (el) el.style.width = Math.min(pct, 100) + '%'; }
+
+loadMetrics();
+setInterval(loadMetrics, 15000);
+</script>
+</body>
+</html>

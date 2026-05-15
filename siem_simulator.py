@@ -20,6 +20,22 @@ import urllib.request
 import urllib.error
 
 # ---------------------------------------------------------------------------
+# ANSI Color Constants & Timestamp Helper
+# ---------------------------------------------------------------------------
+
+_RED = "\033[91m"
+_YEL = "\033[93m"
+_GRN = "\033[92m"
+_CYN = "\033[96m"
+_RST = "\033[0m"
+_DIM = "\033[2m"
+
+
+def _ts() -> str:
+    return datetime.datetime.utcnow().strftime("%H:%M:%S")
+
+
+# ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
 
@@ -115,11 +131,11 @@ def fire_webhook(log_line: str, matched_pattern: str) -> None:
 
     try:
         with urllib.request.urlopen(req, timeout=5) as resp:
-            print(f"[SIEM] [OK] Alert fired! Pattern: {matched_pattern} | Alert ID: {alert_id} | Response: {resp.status}")
+            print(f"{_DIM}{_ts()}{_RST} {_GRN}[SIEM] [OK] Alert fired! Pattern: {matched_pattern} | Alert ID: {alert_id} | Response: {resp.status}{_RST}")
     except urllib.error.URLError as e:
-        print(f"[SIEM] [ERR] Webhook failed (orchestrator may not be up yet): {e.reason} | Alert ID: {alert_id}")
+        print(f"{_DIM}{_ts()}{_RST} {_RED}[SIEM] [ERR] Webhook failed (orchestrator may not be up yet): {e.reason} | Alert ID: {alert_id}{_RST}")
     except Exception as e:
-        print(f"[SIEM] [ERR] Unexpected error firing webhook: {e} | Alert ID: {alert_id}")
+        print(f"{_DIM}{_ts()}{_RST} {_RED}[SIEM] [ERR] Unexpected error firing webhook: {e} | Alert ID: {alert_id}{_RST}")
 
 
 # ---------------------------------------------------------------------------
@@ -131,6 +147,12 @@ def check_line(line: str) -> None:
     for pattern_str, pattern_regex in COMPILED_PATTERNS:
         if pattern_regex.search(line):
             if should_fire(pattern_str):
+                # Extract raw query from URL for visibility
+                url_match = re.search(r"\?q=([^\s\"]+)", line)
+                if url_match:
+                    from urllib.parse import unquote_plus
+                    raw_sql = unquote_plus(url_match.group(1))
+                    print(f"{_DIM}{_ts()}{_RST} {_RED}[SIEM] [DETECT] Raw SQL detected: {raw_sql}{_RST}")
                 fire_webhook(line, pattern_str)
             break  # Only fire once per line (first match wins)
 
@@ -142,18 +164,18 @@ def check_line(line: str) -> None:
 def wait_for_log_file(path: str) -> None:
     """Blocks until the log file exists, printing a status every 5 seconds."""
     if not os.path.exists(path):
-        print(f"[SIEM] [WAIT] Waiting for log file to appear at: {path}")
+        print(f"{_DIM}{_ts()}{_RST} {_YEL}[SIEM] [WAIT] Waiting for log file to appear at: {path}{_RST}")
         while not os.path.exists(path):
             time.sleep(5)
-        print(f"[SIEM] [OK] Log file found. Starting tail...")
+        print(f"{_DIM}{_ts()}{_RST} {_GRN}[SIEM] [OK] Log file found. Starting tail...{_RST}")
 
 
 def tail_log(path: str) -> None:
     """Tails the log file indefinitely, processing new lines as they appear."""
     wait_for_log_file(path)
-    print(f"[SIEM] [INFO] Tailing: {path}")
-    print(f"[SIEM] [INFO] Webhook target: {WEBHOOK_URL}")
-    print(f"[SIEM] [INFO] Watching for patterns: {[p for p, _ in COMPILED_PATTERNS]}")
+    print(f"{_DIM}{_ts()}{_RST} {_CYN}[SIEM] [INFO] Tailing: {path}{_RST}")
+    print(f"{_DIM}{_ts()}{_RST} {_CYN}[SIEM] [INFO] Webhook target: {WEBHOOK_URL}{_RST}")
+    print(f"{_DIM}{_ts()}{_RST} {_CYN}[SIEM] [INFO] Watching for patterns: {[p for p, _ in COMPILED_PATTERNS]}{_RST}")
     print("-" * 70)
 
     with open(path, "r") as f:
@@ -176,4 +198,4 @@ if __name__ == "__main__":
     try:
         tail_log(LOG_PATH)
     except KeyboardInterrupt:
-        print("\n[SIEM] [STOP] Shutdown requested. SIEM Simulator stopped.")
+        print(f"\n{_DIM}{_ts()}{_RST} {_YEL}[SIEM] [STOP] Shutdown requested. SIEM Simulator stopped.{_RST}")
