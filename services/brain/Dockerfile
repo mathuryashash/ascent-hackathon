@@ -5,11 +5,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /
 
 WORKDIR /app
 
-COPY requirements.txt .
+# Copy requirements from its specific path
+COPY services/brain/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy all orchestrator source code
-COPY . .
+# Copy the orchestrator source code and the AI logic needed
+COPY services/brain/ .
+COPY ascent_gupta/member_2_ai/ ./member_2_ai/
 
 EXPOSE 8000
 

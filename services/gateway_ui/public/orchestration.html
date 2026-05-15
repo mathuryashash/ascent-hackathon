@@ -1,512 +1,498 @@
-<!-- Project Chimera | Orchestration Timeline -->
 <!DOCTYPE html>
-
-<html class="dark" lang="en"><head>
+<html class="dark" lang="en">
+<head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CHIMERA — Pipeline</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist:wght@500;600;700&family=JetBrains+Mono:wght@400&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-<style>
-    .material-symbols-outlined {
-        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-    }
-    .glass-panel {
-        background: rgba(23, 31, 51, 0.4);
-        backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    .timeline-item.active {
-        background: rgba(0, 218, 243, 0.1);
-        border-l: 3px solid #00daf3;
-    }
-    .timeline-item.completed {
-        background: rgba(168, 255, 210, 0.05);
-        border-l: 3px solid #a8ffd2;
-    }
-    .timeline-item.failed {
-        background: rgba(255, 180, 171, 0.05);
-        border-l: 3px solid #ffb4ab;
-    }
-    .custom-scrollbar::-webkit-scrollbar {
-        width: 6px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.05);
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: rgba(0, 218, 243, 0.3);
-        border-radius: 3px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: rgba(0, 218, 243, 0.6);
-    }
-    .pulse-dot {
-        animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.5; }
-    }
-</style>
-<script id="tailwind-config">
-    tailwind.config = {
-        darkMode: "class",
-        theme: {
-            extend: {
-                "colors": {
-                    "background": "#0b1326",
-                    "on-secondary": "#213145",
-                    "tertiary-container": "#5be9ad",
-                    "on-primary-fixed-variant": "#004f58",
-                    "on-tertiary-container": "#006645",
-                    "on-tertiary": "#003824",
-                    "on-secondary-container": "#a9bad3",
-                    "secondary": "#b7c8e1",
-                    "on-tertiary-fixed": "#002113",
-                    "tertiary": "#a8ffd2",
-                    "surface-container": "#171f33",
-                    "error-container": "#93000a",
-                    "primary-fixed": "#9cf0ff",
-                    "surface-container-low": "#131b2e",
-                    "on-error": "#690005",
-                    "outline-variant": "#3b494c",
-                    "surface": "#0b1326",
-                    "secondary-fixed": "#d3e4fe",
-                    "inverse-on-surface": "#283044",
-                    "surface-dim": "#0b1326",
-                    "surface-tint": "#00daf3",
-                    "on-secondary-fixed": "#0b1c30",
-                    "outline": "#849396",
-                    "on-primary-container": "#00626e",
-                    "inverse-surface": "#dae2fd",
-                    "primary-container": "#00e5ff",
-                    "tertiary-fixed-dim": "#4edea3",
-                    "on-surface-variant": "#bac9cc",
-                    "on-secondary-fixed-variant": "#38485d",
-                    "primary": "#c3f5ff",
-                    "surface-bright": "#31394d",
-                    "inverse-primary": "#006875",
-                    "error": "#ffb4ab",
-                    "secondary-container": "#3a4a5f",
-                    "on-surface": "#dae2fd",
-                    "on-background": "#dae2fd",
-                    "on-tertiary-fixed-variant": "#005236",
-                    "surface-container-highest": "#2d3449",
-                    "surface-container-lowest": "#060e20",
-                    "on-primary-fixed": "#001f24",
-                    "on-error-container": "#ffdad6",
-                    "secondary-fixed-dim": "#b7c8e1",
-                    "surface-container-high": "#222a3d",
-                    "on-primary": "#00363d",
-                    "tertiary-fixed": "#6ffbbe",
-                    "surface-variant": "#2d3449",
-                    "primary-fixed-dim": "#00daf3"
-                },
-                "borderRadius": {
-                    "DEFAULT": "0.125rem",
-                    "lg": "0.25rem",
-                    "xl": "0.5rem",
-                    "full": "0.75rem"
-                },
-                "spacing": {
-                    "base": "4px",
-                    "gutter": "20px",
-                    "xs": "4px",
-                    "margin-mobile": "16px",
-                    "margin-desktop": "32px",
-                    "sm": "8px",
-                    "md": "16px",
-                    "xl": "40px",
-                    "lg": "24px"
-                },
-                "fontFamily": {
-                    "body-sm": ["Inter"],
-                    "display": ["Geist"],
-                    "headline-lg": ["Geist"],
-                    "headline-md": ["Geist"],
-                    "body-md": ["Inter"],
-                    "body-lg": ["Inter"],
-                    "headline-sm": ["Geist"],
-                    "headline-lg-mobile": ["Geist"],
-                    "label-caps": ["Geist"],
-                    "code-sm": ["JetBrains Mono"]
-                },
-                "fontSize": {
-                    "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
-                    "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
-                    "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
-                    "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
-                    "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
-                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
-                    "headline-sm": ["20px", {"lineHeight": "1.4", "fontWeight": "500"}],
-                    "headline-lg-mobile": ["24px", {"lineHeight": "1.2", "fontWeight": "600"}],
-                    "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700"}],
-                    "code-sm": ["13px", {"lineHeight": "1.4", "fontWeight": "400"}]
-                }
-            },
-        },
-    }
+<script>
+tailwind.config = {
+  darkMode:"class",
+  theme:{extend:{
+    colors:{"background":"#0b1326","on-secondary":"#213145","tertiary-container":"#5be9ad","on-primary-fixed-variant":"#004f58","on-tertiary-container":"#006645","on-tertiary":"#003824","on-secondary-container":"#a9bad3","secondary":"#b7c8e1","on-tertiary-fixed":"#002113","tertiary":"#a8ffd2","surface-container":"#171f33","error-container":"#93000a","primary-fixed":"#9cf0ff","surface-container-low":"#131b2e","on-error":"#690005","outline-variant":"#3b494c","surface":"#0b1326","secondary-fixed":"#d3e4fe","inverse-on-surface":"#283044","surface-dim":"#0b1326","surface-tint":"#00daf3","on-secondary-fixed":"#0b1c30","outline":"#849396","on-primary-container":"#00626e","inverse-surface":"#dae2fd","primary-container":"#00e5ff","tertiary-fixed-dim":"#4edea3","on-surface-variant":"#bac9cc","on-secondary-fixed-variant":"#38485d","primary":"#c3f5ff","surface-bright":"#31394d","inverse-primary":"#006875","error":"#ffb4ab","secondary-container":"#3a4a5f","on-surface":"#dae2fd","on-background":"#dae2fd","on-tertiary-fixed-variant":"#005236","surface-container-highest":"#2d3449","surface-container-lowest":"#060e20","on-primary-fixed":"#001f24","on-error-container":"#ffdad6","secondary-fixed-dim":"#b7c8e1","surface-container-high":"#222a3d","on-primary":"#00363d","tertiary-fixed":"#6ffbbe","surface-variant":"#2d3449","primary-fixed-dim":"#00daf3"},
+    borderRadius:{"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"},
+    spacing:{"base":"4px","gutter":"20px","xs":"4px","margin-mobile":"16px","margin-desktop":"32px","sm":"8px","md":"16px","xl":"40px","lg":"24px"},
+    fontFamily:{"body-sm":["Inter"],"display":["Geist"],"headline-lg":["Geist"],"headline-md":["Geist"],"body-md":["Inter"],"body-lg":["Inter"],"headline-sm":["Geist"],"headline-lg-mobile":["Geist"],"label-caps":["Geist"],"code-sm":["JetBrains Mono"]},
+    fontSize:{"body-sm":["14px",{"lineHeight":"1.5","fontWeight":"400"}],"display":["48px",{"lineHeight":"1.1","letterSpacing":"-0.02em","fontWeight":"700"}],"headline-lg":["32px",{"lineHeight":"1.2","letterSpacing":"-0.01em","fontWeight":"600"}],"headline-md":["24px",{"lineHeight":"1.3","fontWeight":"600"}],"body-md":["16px",{"lineHeight":"1.6","fontWeight":"400"}],"body-lg":["18px",{"lineHeight":"1.6","fontWeight":"400"}],"headline-sm":["20px",{"lineHeight":"1.4","fontWeight":"500"}],"headline-lg-mobile":["24px",{"lineHeight":"1.2","fontWeight":"600"}],"label-caps":["12px",{"lineHeight":"1","letterSpacing":"0.05em","fontWeight":"700"}],"code-sm":["13px",{"lineHeight":"1.4","fontWeight":"400"}]}
+  }}
+}
 </script>
+<style>
+.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}
+.glass-card{background:rgba(23,31,51,0.4);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.1)}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#3b494c;border-radius:10px}
+
+/* Pipeline node states */
+.node-idle { border-color: rgba(59,73,76,0.5); background: rgba(23,31,51,0.3); }
+.node-active { border-color: rgba(195,245,255,0.6); background: rgba(195,245,255,0.05); box-shadow: 0 0 16px rgba(195,245,255,0.15); }
+.node-done { border-color: rgba(168,255,210,0.4); background: rgba(168,255,210,0.05); }
+.node-error { border-color: rgba(255,180,171,0.5); background: rgba(255,180,171,0.05); }
+.node-waiting { border-color: rgba(244,209,96,0.5); background: rgba(244,209,96,0.05); box-shadow: 0 0 16px rgba(244,209,96,0.15); }
+
+.connector { width: 2px; background: linear-gradient(180deg,#3b494c,rgba(59,73,76,0.2)); margin: 0 auto; }
+.connector-active { background: linear-gradient(180deg,#00daf3,rgba(0,218,243,0.2)); }
+.connector-done { background: linear-gradient(180deg,#a8ffd2,rgba(168,255,210,0.2)); }
+</style>
 </head>
-<body class="bg-background text-on-background font-body-md overflow-hidden h-screen flex">
-<!-- SideNavBar -->
-<aside class="hidden md:flex flex-col h-full py-lg gap-md bg-surface-container-low/60 backdrop-blur-xl border-r border-outline-variant/20 w-64 z-50">
-<div class="px-md mb-lg">
-<div class="flex items-center gap-sm">
-<div class="w-8 h-8 bg-primary-container rounded flex items-center justify-center">
-<span class="material-symbols-outlined text-on-primary-fixed" data-icon="memory">memory</span>
-</div>
-<div>
-<h1 class="font-display text-headline-sm font-bold text-primary">Chimera</h1>
-<p class="font-label-caps text-[10px] text-on-surface-variant uppercase tracking-widest">Auto v2.4</p>
-</div>
-</div>
-</div>
-<nav class="flex-1 flex flex-col gap-xs px-sm">
-<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" href="index.html">
-<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
-<span class="font-label-caps text-label-caps">Dashboard</span>
-</a>
-<a class="flex items-center gap-md px-md py-sm rounded text-primary border-r-2 border-primary bg-primary/5 transition-all" href="orchestration.html">
-<span class="material-symbols-outlined" data-icon="memory">memory</span>
-<span class="font-label-caps text-label-caps">Orchestration</span>
-</a>
-<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" href="observability.html">
-<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
-<span class="font-label-caps text-label-caps">Observability</span>
-</a>
-<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" href="auth.html">
-<span class="material-symbols-outlined" data-icon="terminal">terminal</span>
-<span class="font-label-caps text-label-caps">Auth Portal</span>
-</a>
-</nav>
-<div class="mt-auto px-sm flex flex-col gap-xs">
-<a class="flex items-center gap-md px-md py-sm rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" href="#">
-<span class="material-symbols-outlined" data-icon="verified_user">verified_user</span>
-<span class="font-label-caps text-label-caps">Security</span>
-</a>
-</div>
-</aside>
-<!-- Main Content Area -->
-<div class="flex-1 flex flex-col overflow-hidden relative">
-<!-- TopAppBar -->
-<header class="flex justify-between items-center w-full px-margin-desktop h-16 sticky top-0 z-50 bg-surface/40 backdrop-blur-md border-b border-outline-variant/30">
-<div class="flex items-center gap-lg">
-<div class="font-display text-headline-md font-bold text-primary tracking-tight">Orchestration Timeline</div>
-</div>
-<div class="flex items-center gap-md">
-<span class="text-on-surface-variant text-[10px] font-code-sm" id="status-badge">IDLE</span>
-</div>
+<body class="bg-background text-on-background font-body-md overflow-hidden h-screen flex flex-col">
+
+<header class="flex justify-between items-center w-full px-margin-desktop h-16 sticky top-0 z-50 bg-surface/40 backdrop-blur-md border-b border-outline-variant/30 shrink-0">
+  <div class="flex items-center gap-lg">
+    <span class="font-display text-headline-md font-bold text-primary tracking-tight">CHIMERA</span>
+    <div class="hidden md:flex items-center gap-sm">
+      <span class="font-label-caps text-label-caps text-on-surface-variant">Trace:</span>
+      <select id="trace-select" onchange="selectTrace(this.value)" class="bg-surface-container border border-outline-variant/30 rounded px-sm py-1 font-code-sm text-[11px] text-on-surface outline-none">
+        <option value="">— select run —</option>
+      </select>
+      <button onclick="fetchTraceList()" class="p-1 text-on-surface-variant hover:text-on-surface"><span class="material-symbols-outlined text-[16px]">refresh</span></button>
+    </div>
+  </div>
+  <div class="flex items-center gap-md">
+    <div class="glass-card px-md py-sm flex items-center gap-lg">
+      <div>
+        <span class="font-label-caps text-label-caps text-on-surface-variant">Status</span>
+        <div class="font-code-sm text-primary text-[11px]" id="hdr-status">—</div>
+      </div>
+      <div class="w-px h-8 bg-outline-variant/30"></div>
+      <div>
+        <span class="font-label-caps text-label-caps text-on-surface-variant">Iterations</span>
+        <div class="font-code-sm text-primary text-[11px]" id="hdr-iters">—</div>
+      </div>
+      <div class="w-px h-8 bg-outline-variant/30"></div>
+      <div>
+        <span class="font-label-caps text-label-caps text-on-surface-variant">Flag</span>
+        <div class="font-code-sm text-[11px]" id="hdr-flag" style="color:#a8ffd2">—</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-xs px-sm py-1 rounded border" id="ws-badge" style="background:rgba(255,180,171,0.1);border-color:rgba(255,180,171,0.2)">
+      <span class="w-1.5 h-1.5 rounded-full bg-error" id="ws-dot"></span>
+      <span class="font-label-caps text-[10px] text-error" id="ws-label">WS</span>
+    </div>
+  </div>
 </header>
-<!-- Main Canvas -->
-<main class="flex-1 overflow-y-auto p-margin-desktop bg-background">
-<div class="max-w-[1600px] mx-auto space-y-xl">
 
-<!-- Execution Status -->
-<section class="glass-panel p-md space-y-md">
-<div class="flex items-center justify-between">
-<div class="flex items-center gap-md">
-<span class="material-symbols-outlined text-primary text-sm" data-icon="schedule">schedule</span>
-<h2 class="font-display text-headline-sm text-primary">Current Execution</h2>
-</div>
-<div class="flex gap-md text-[10px] font-code-sm">
-<div class="flex items-center gap-xs">
-<div class="w-2 h-2 rounded-full bg-outline"></div>
-<span class="text-on-surface-variant" id="exec-timer">00:00:00</span>
-</div>
-</div>
-</div>
-<div class="grid grid-cols-4 gap-md">
-<div class="bg-surface-container-low/50 p-md rounded">
-<div class="font-label-caps text-[10px] text-on-surface-variant uppercase mb-sm">Iteration</div>
-<div class="font-display text-headline-md text-primary" id="exec-iteration">-</div>
-</div>
-<div class="bg-surface-container-low/50 p-md rounded">
-<div class="font-label-caps text-[10px] text-on-surface-variant uppercase mb-sm">Current Node</div>
-<div class="font-display text-headline-md text-primary" id="exec-node">IDLE</div>
-</div>
-<div class="bg-surface-container-low/50 p-md rounded">
-<div class="font-label-caps text-[10px] text-on-surface-variant uppercase mb-sm">Status</div>
-<div class="font-display text-headline-md text-primary" id="exec-status">IDLE</div>
-</div>
-<div class="bg-surface-container-low/50 p-md rounded">
-<div class="font-label-caps text-[10px] text-on-surface-variant uppercase mb-sm">Trace ID</div>
-<div class="font-code-sm text-[11px] text-on-surface-variant" id="exec-trace">-</div>
-</div>
-</div>
-</section>
+<div class="flex flex-1 overflow-hidden">
+  <aside class="hidden md:flex flex-col h-full py-lg gap-md bg-surface-container-low/60 backdrop-blur-xl border-r border-outline-variant/20 w-56 shrink-0">
+    <div class="px-lg pb-md">
+      <div class="flex items-center gap-sm">
+        <div class="w-8 h-8 bg-error/20 rounded flex items-center justify-center border border-error/30">
+          <span class="material-symbols-outlined text-[20px] text-error">security</span>
+        </div>
+        <div>
+          <div class="font-display text-headline-sm font-bold text-primary">Chimera</div>
+          <div class="font-label-caps text-label-caps text-on-surface-variant">Autonomous SecOps</div>
+        </div>
+      </div>
+    </div>
+    <nav class="flex-1 px-sm space-y-1">
+      <a class="flex items-center gap-md px-md py-2.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all rounded" href="index.html">
+        <span class="material-symbols-outlined">dashboard</span>
+        <span class="font-label-caps text-label-caps">Command Center</span>
+      </a>
+      <a class="flex items-center gap-md px-md py-2.5 text-primary border-r-2 border-primary bg-primary/5 transition-all rounded translate-x-1" href="orchestration.html">
+        <span class="material-symbols-outlined">account_tree</span>
+        <span class="font-label-caps text-label-caps">Pipeline</span>
+      </a>
+      <a class="flex items-center gap-md px-md py-2.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all rounded" href="observability.html">
+        <span class="material-symbols-outlined">analytics</span>
+        <span class="font-label-caps text-label-caps">Metrics</span>
+      </a>
+      <a class="flex items-center gap-md px-md py-2.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all rounded" href="logs.html">
+        <span class="material-symbols-outlined">terminal</span>
+        <span class="font-label-caps text-label-caps">Event Stream</span>
+      </a>
+    </nav>
+  </aside>
 
-<!-- Full Execution Timeline -->
-<section class="glass-panel p-md space-y-md">
-<div class="flex items-center justify-between border-b border-outline-variant/20 pb-sm">
-<div class="flex items-center gap-md">
-<span class="material-symbols-outlined text-primary text-sm" data-icon="timeline">timeline</span>
-<h2 class="font-display text-headline-sm text-primary">Pipeline Execution Timeline</h2>
-</div>
-</div>
+  <!-- Pipeline Canvas -->
+  <main class="flex-1 relative bg-surface-container-lowest overflow-hidden">
+    <div class="absolute inset-0 pointer-events-none opacity-5" style="background-image:linear-gradient(#849396 1px,transparent 1px),linear-gradient(90deg,#849396 1px,transparent 1px);background-size:40px 40px"></div>
 
-<!-- Timeline Container -->
-<div class="space-y-sm">
-<!-- Ingress -->
-<div class="timeline-item p-md rounded border-l-2 border-l-outline-variant bg-surface-container-low/30">
-<div class="flex items-start justify-between mb-sm">
-<div class="flex items-center gap-md">
-<span class="material-symbols-outlined text-secondary text-lg" data-icon="cloud_download">cloud_download</span>
-<div>
-<h3 class="font-body-sm font-semibold text-on-surface">Ingress: Webhook Reception</h3>
-<p class="font-code-sm text-[11px] text-on-surface-variant">Receives SIEM alert payload</p>
-</div>
-</div>
-<span class="font-code-sm text-[10px] text-on-surface-variant" id="ingress-time">--</span>
-</div>
-<div class="bg-surface-container-lowest/50 p-sm rounded border border-outline-variant/20 font-code-sm text-[10px] text-on-surface-variant" id="ingress-data">[Waiting...]</div>
-</div>
+    <!-- No trace selected state -->
+    <div id="no-trace" class="absolute inset-0 flex items-center justify-center">
+      <div class="text-center">
+        <span class="material-symbols-outlined text-[48px] text-on-surface-variant">account_tree</span>
+        <div class="font-headline-sm text-on-surface-variant mt-md">Select a run from the dropdown</div>
+        <div class="font-body-sm text-[12px] text-on-surface-variant mt-sm">or go to <a href="index.html" class="text-primary underline">Command Center</a> and trigger an attack</div>
+      </div>
+    </div>
 
-<!-- Arrow -->
-<div class="flex justify-center">
-<div class="w-1 h-6 bg-gradient-to-b from-outline-variant/30 to-outline-variant/10"></div>
-</div>
+    <!-- Pipeline flow (shown when trace selected) -->
+    <div id="pipeline-view" class="hidden absolute inset-0 overflow-auto p-xl">
+      <div class="flex gap-xl min-h-full">
 
-<!-- Scout -->
-<div class="timeline-item p-md rounded border-l-2 border-l-outline-variant bg-surface-container-low/30">
-<div class="flex items-start justify-between mb-sm">
-<div class="flex items-center gap-md">
-<span class="material-symbols-outlined text-secondary text-lg" data-icon="visibility">visibility</span>
-<div>
-<h3 class="font-body-sm font-semibold text-on-surface">Scout: Target Reconnaissance</h3>
-<p class="font-code-sm text-[11px] text-on-surface-variant">Analyzes logs, services, and network topology</p>
-</div>
-</div>
-<span class="font-code-sm text-[10px] text-on-surface-variant" id="scout-time">--</span>
-</div>
-<div class="bg-surface-container-lowest/50 p-sm rounded border border-outline-variant/20 font-code-sm text-[10px] text-on-surface-variant h-20 overflow-y-auto custom-scrollbar" id="scout-data">[Waiting...]</div>
-</div>
+        <!-- Left: Pipeline graph -->
+        <div class="w-56 shrink-0">
+          <div class="space-y-0" id="pipeline-nodes">
+            <!-- Nodes injected by JS -->
+          </div>
+        </div>
 
-<!-- Arrow -->
-<div class="flex justify-center">
-<div class="w-1 h-6 bg-gradient-to-b from-outline-variant/30 to-outline-variant/10"></div>
-</div>
+        <!-- Right: State detail panel -->
+        <div class="flex-1 overflow-y-auto space-y-md">
 
-<!-- Investigator -->
-<div class="timeline-item p-md rounded border-l-2 border-l-outline-variant bg-surface-container-low/30">
-<div class="flex items-start justify-between mb-sm">
-<div class="flex items-center gap-md">
-<span class="material-symbols-outlined text-secondary text-lg" data-icon="search">search</span>
-<div>
-<h3 class="font-body-sm font-semibold text-on-surface">Investigator: Exploit Testing (Loop 1-10)</h3>
-<p class="font-code-sm text-[11px] text-on-surface-variant">Tests payloads iteratively, captures proof-of-concept</p>
-</div>
-</div>
-<span class="font-code-sm text-[10px] text-on-surface-variant" id="investigator-time">--</span>
-</div>
-<div class="grid grid-cols-2 gap-md mb-sm">
-<div class="bg-surface-container-lowest/50 p-sm rounded border border-outline-variant/20">
-<div class="font-label-caps text-[9px] text-on-surface-variant uppercase mb-xs">Hypothesis</div>
-<div class="font-code-sm text-[10px] text-on-surface-variant h-16 overflow-y-auto custom-scrollbar" id="investigator-hypothesis">[Testing...]</div>
-</div>
-<div class="bg-surface-container-lowest/50 p-sm rounded border border-outline-variant/20">
-<div class="font-label-caps text-[9px] text-on-surface-variant uppercase mb-xs">Exploit Proof</div>
-<div class="font-code-sm text-[10px] text-tertiary h-16 overflow-y-auto custom-scrollbar" id="investigator-exploit">[Testing...]</div>
-</div>
-</div>
-<div class="bg-surface-container-lowest/50 p-sm rounded border border-outline-variant/20">
-<div class="font-label-caps text-[9px] text-on-surface-variant uppercase mb-xs">Captured Flag</div>
-<div class="font-code-sm text-[10px] text-tertiary h-12 overflow-y-auto custom-scrollbar" id="investigator-flag">[Testing...]</div>
-</div>
-</div>
+          <!-- Approval panel (shown when awaiting) -->
+          <div id="approval-panel" class="hidden glass-card rounded-xl overflow-hidden border border-[#f4d160]/30">
+            <div class="p-md bg-[#f4d160]/5 border-b border-[#f4d160]/20 flex items-center gap-sm">
+              <span class="material-symbols-outlined text-[#f4d160]">pending_actions</span>
+              <span class="font-headline-sm text-[#f4d160]">Human Approval Required</span>
+            </div>
+            <div class="p-md space-y-md">
+              <div>
+                <div class="font-label-caps text-label-caps text-on-surface-variant mb-sm">Architect's Patch</div>
+                <pre id="patch-display" class="bg-surface-container-lowest border border-outline-variant/30 rounded p-md font-code-sm text-[11px] text-primary overflow-x-auto whitespace-pre-wrap" style="max-height:320px">—</pre>
+              </div>
+              <div class="flex gap-sm">
+                <button id="approve-btn" onclick="approvePatch()" class="flex-1 py-2.5 bg-tertiary text-on-tertiary rounded font-label-caps text-label-caps hover:brightness-110 transition-all flex items-center justify-center gap-xs">
+                  <span class="material-symbols-outlined text-[16px]">check_circle</span> Apply Patch
+                </button>
+                <button id="reject-btn" onclick="rejectPatch()" class="flex-1 py-2.5 border border-error/30 text-error rounded font-label-caps text-label-caps hover:bg-error/10 transition-all flex items-center justify-center gap-xs">
+                  <span class="material-symbols-outlined text-[16px]">cancel</span> Reject
+                </button>
+              </div>
+            </div>
+          </div>
 
-<!-- Arrow -->
-<div class="flex justify-center">
-<div class="w-1 h-6 bg-gradient-to-b from-outline-variant/30 to-outline-variant/10"></div>
-</div>
+          <!-- State cards -->
+          <div id="state-cards" class="space-y-md">
+            <!-- Scout findings -->
+            <div class="glass-card rounded-xl p-md" id="card-scout" style="display:none">
+              <div class="font-label-caps text-label-caps text-on-surface-variant mb-sm flex items-center gap-xs">
+                <span class="material-symbols-outlined text-[14px]">travel_explore</span> Scout Findings
+              </div>
+              <pre id="val-scout" class="font-code-sm text-[11px] text-on-surface-variant whitespace-pre-wrap overflow-x-auto" style="max-height:120px">—</pre>
+            </div>
+            <!-- Hypothesis -->
+            <div class="glass-card rounded-xl p-md" id="card-hypothesis" style="display:none">
+              <div class="font-label-caps text-label-caps text-on-surface-variant mb-sm flex items-center gap-xs">
+                <span class="material-symbols-outlined text-[14px]">psychology</span> Current Hypothesis
+              </div>
+              <pre id="val-hypothesis" class="font-code-sm text-[11px] text-on-surface-variant whitespace-pre-wrap overflow-x-auto" style="max-height:120px">—</pre>
+            </div>
+            <!-- Exploit proof -->
+            <div class="glass-card rounded-xl p-md" id="card-exploit" style="display:none">
+              <div class="font-label-caps text-label-caps text-tertiary mb-sm flex items-center gap-xs">
+                <span class="material-symbols-outlined text-[14px]">bolt</span> Exploit Proof
+              </div>
+              <pre id="val-exploit" class="font-code-sm text-[12px] text-tertiary whitespace-pre-wrap overflow-x-auto bg-tertiary/5 border border-tertiary/20 rounded p-sm">—</pre>
+            </div>
+            <!-- Captured flag -->
+            <div class="glass-card rounded-xl p-md" id="card-flag" style="display:none">
+              <div class="font-label-caps text-label-caps text-tertiary mb-sm flex items-center gap-xs">
+                <span class="material-symbols-outlined text-[14px]">flag</span> Captured Flag
+              </div>
+              <div id="val-flag" class="font-code-sm text-[14px] text-tertiary">—</div>
+            </div>
+            <!-- Topography -->
+            <div class="glass-card rounded-xl p-md" id="card-topo" style="display:none">
+              <div class="font-label-caps text-label-caps text-on-surface-variant mb-sm flex items-center gap-xs">
+                <span class="material-symbols-outlined text-[14px]">map</span> Attack Surface
+              </div>
+              <pre id="val-topo" class="font-code-sm text-[11px] text-on-surface-variant whitespace-pre-wrap overflow-x-auto" style="max-height:120px">—</pre>
+            </div>
+            <!-- Failure reason -->
+            <div class="glass-card rounded-xl p-md" id="card-failure" style="display:none">
+              <div class="font-label-caps text-label-caps text-error mb-sm flex items-center gap-xs">
+                <span class="material-symbols-outlined text-[14px]">error</span> Failure Reason
+              </div>
+              <pre id="val-failure" class="font-code-sm text-[11px] text-error whitespace-pre-wrap overflow-x-auto">—</pre>
+            </div>
+          </div>
 
-<!-- Architect -->
-<div class="timeline-item p-md rounded border-l-2 border-l-outline-variant bg-surface-container-low/30">
-<div class="flex items-start justify-between mb-sm">
-<div class="flex items-center gap-md">
-<span class="material-symbols-outlined text-secondary text-lg" data-icon="construction">construction</span>
-<div>
-<h3 class="font-body-sm font-semibold text-on-surface">Architect: Patch Generation</h3>
-<p class="font-code-sm text-[11px] text-on-surface-variant">Analyzes source code, generates remediation patch</p>
-</div>
-</div>
-<span class="font-code-sm text-[10px] text-on-surface-variant" id="architect-time">--</span>
-</div>
-<div class="bg-surface-container-lowest/50 p-sm rounded border border-outline-variant/20 font-code-sm text-[10px] h-32 overflow-y-auto custom-scrollbar" id="architect-patch">
-<span class="text-on-surface-variant">[Generating patch...]</span>
-</div>
-</div>
-
-<!-- Arrow -->
-<div class="flex justify-center">
-<div class="w-1 h-6 bg-gradient-to-b from-outline-variant/30 to-outline-variant/10"></div>
-</div>
-
-<!-- Verifier -->
-<div class="timeline-item p-md rounded border-l-2 border-l-outline-variant bg-surface-container-low/30">
-<div class="flex items-start justify-between mb-sm">
-<div class="flex items-center gap-md">
-<span class="material-symbols-outlined text-secondary text-lg" data-icon="check_circle">check_circle</span>
-<div>
-<h3 class="font-body-sm font-semibold text-on-surface">Verifier: Patch Validation</h3>
-<p class="font-code-sm text-[11px] text-on-surface-variant">Re-tests exploit against patched version</p>
-</div>
-</div>
-<span class="font-code-sm text-[10px] text-on-surface-variant" id="verifier-time">--</span>
-</div>
-<div class="bg-surface-container-lowest/50 p-sm rounded border border-outline-variant/20 font-code-sm text-[10px] text-on-surface-variant h-20 overflow-y-auto custom-scrollbar" id="verifier-result">[Awaiting patch testing...]</div>
-</div>
-</div>
-</section>
-
-<!-- Performance Metrics -->
-<section class="glass-panel p-md space-y-md">
-<div class="flex items-center gap-md border-b border-outline-variant/20 pb-sm">
-<span class="material-symbols-outlined text-primary text-sm" data-icon="query_stats">query_stats</span>
-<h2 class="font-display text-headline-sm text-primary">Execution Performance</h2>
-</div>
-<div class="grid grid-cols-3 gap-md">
-<div class="bg-surface-container-low/50 p-md rounded">
-<div class="font-label-caps text-[10px] text-on-surface-variant uppercase mb-sm">Total Duration</div>
-<div class="font-display text-headline-lg text-primary" id="metric-duration">--</div>
-<div class="font-code-sm text-[10px] text-on-surface-variant">From ingress to complete</div>
-</div>
-<div class="bg-surface-container-low/50 p-md rounded">
-<div class="font-label-caps text-[10px] text-on-surface-variant uppercase mb-sm">Avg Node Latency</div>
-<div class="font-display text-headline-lg text-primary" id="metric-latency">--</div>
-<div class="font-code-sm text-[10px] text-on-surface-variant">Mean processing time</div>
-</div>
-<div class="bg-surface-container-low/50 p-md rounded">
-<div class="font-label-caps text-[10px] text-on-surface-variant uppercase mb-sm">Success Rate</div>
-<div class="font-display text-headline-lg text-primary" id="metric-success">--</div>
-<div class="font-code-sm text-[10px] text-on-surface-variant">Vulnerability patched</div>
-</div>
-</div>
-</section>
-
-</div>
-</main>
+        </div>
+      </div>
+    </div>
+  </main>
 </div>
 
 <script>
-    const STATE = {
-        startTime: null,
-        executionData: {},
-        nodeTimings: {}
-    };
+const API = '';
+const WS_URL = `ws://${window.location.hostname}:8000/ws`;
 
-    function formatTime(ms) {
-        if (!ms) return '--';
-        const seconds = (ms / 1000).toFixed(2);
-        return `${seconds}s`;
+// Node definitions in pipeline order
+const NODES = [
+  { id:'ingress',          label:'Webhook Ingress',   icon:'webhook',         statuses:['queued'] },
+  { id:'scout',            label:'Scout Agent',        icon:'travel_explore',  statuses:['scouting'] },
+  { id:'summarizer',       label:'Summarizer',         icon:'summarize',       statuses:['summarizing'] },
+  { id:'investigator',     label:'Investigator',       icon:'psychology',      statuses:['investigating'] },
+  { id:'sandbox',          label:'Sandbox Runner',     icon:'terminal',        statuses:['sandbox_running'] },
+  { id:'evaluator',        label:'Evaluator',          icon:'route',           statuses:['evaluating'] },
+  { id:'architect',        label:'Architect',          icon:'construction',    statuses:['patching'] },
+  { id:'human_approval',   label:'Human Approval',     icon:'pending_actions', statuses:['awaiting_approval'], interrupt:true },
+  { id:'verifier',         label:'Verifier',           icon:'verified',        statuses:['verifying'] },
+  { id:'rollback',         label:'Rollback',           icon:'undo',            statuses:['rolling_back'] },
+];
+
+const DONE_STATUSES = ['resolved', 'failed', 'rejected'];
+const ERROR_STATUSES = ['failed'];
+
+let currentTraceId = null;
+let currentState = {};
+let ws = null;
+let pollInterval = null;
+// Cache of latest full state per trace (from WS pipeline_step events)
+let stateCache = {};
+
+// ── Check URL param ──
+const urlTrace = new URLSearchParams(location.search).get('trace');
+
+// ── WS ──
+function connectWS() {
+  try { ws = new WebSocket(WS_URL); } catch(_) { setTimeout(connectWS, 3000); return; }
+  ws.onopen = () => setWSStatus('connected');
+  ws.onclose = () => { setWSStatus('offline'); setTimeout(connectWS, 3000); };
+  ws.onerror = () => {};
+  ws.onmessage = (e) => {
+    try {
+      const msg = JSON.parse(e.data);
+      if (msg.event === 'pipeline_step' && msg.data) {
+        const key = Object.keys(msg.data)[0];
+        if (key && msg.data[key]) {
+          const s = msg.data[key];
+          if (s.trace_id) {
+            stateCache[s.trace_id] = { ...(stateCache[s.trace_id]||{}), ...s };
+            if (s.trace_id === currentTraceId) applyState(stateCache[s.trace_id]);
+          }
+        }
+      }
+      if (['pipeline_complete','pipeline_error'].includes(msg.event)) {
+        const tid = msg.data?.trace_id;
+        if (tid === currentTraceId) pollStatus();
+      }
+    } catch(_) {}
+  };
+}
+
+function setWSStatus(s) {
+  const dot = document.getElementById('ws-dot');
+  const lbl = document.getElementById('ws-label');
+  const badge = document.getElementById('ws-badge');
+  if (s === 'connected') {
+    dot.style.background = '#a8ffd2'; lbl.textContent = 'LIVE'; lbl.style.color = '#a8ffd2';
+    badge.style.background='rgba(168,255,210,0.1)'; badge.style.borderColor='rgba(168,255,210,0.2)';
+  } else {
+    dot.style.background='#ffb4ab'; lbl.textContent='WS'; lbl.style.color='#ffb4ab';
+    badge.style.background='rgba(255,180,171,0.1)'; badge.style.borderColor='rgba(255,180,171,0.2)';
+  }
+}
+
+// ── Trace list ──
+async function fetchTraceList() {
+  try {
+    const [tracesRes, runsRes] = await Promise.allSettled([
+      fetch(`${API}/api/traces`).then(r => r.json()),
+      fetch(`${API}/api/runs`).then(r => r.json()),
+    ]);
+    const combined = {};
+    if (runsRes.status==='fulfilled') for(const r of (runsRes.value||[])) combined[r.trace_id]=r;
+    if (tracesRes.status==='fulfilled') for(const t of (tracesRes.value?.traces||[])) combined[t.trace_id]={...(combined[t.trace_id]||{}),...t};
+    const sel = document.getElementById('trace-select');
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">— select run —</option>';
+    for (const r of Object.values(combined).sort((a,b)=>(b.startTime||0)-(a.startTime||0)).slice(0,20)) {
+      const opt = document.createElement('option');
+      opt.value = r.trace_id;
+      opt.textContent = `${r.trace_id.slice(0,8)}… [${r.status||'?'}]`;
+      if (r.trace_id === cur) opt.selected = true;
+      sel.appendChild(opt);
     }
+  } catch(_) {}
+}
 
-    function formatDuration(ms) {
-        if (!ms) return '--:--:--';
-        const totalSeconds = Math.floor(ms / 1000);
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
-        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-    }
+function selectTrace(traceId) {
+  currentTraceId = traceId || null;
+  if (!traceId) {
+    document.getElementById('no-trace').style.display = 'flex';
+    document.getElementById('pipeline-view').classList.add('hidden');
+    clearInterval(pollInterval); pollInterval = null;
+    return;
+  }
+  document.getElementById('no-trace').style.display = 'none';
+  document.getElementById('pipeline-view').classList.remove('hidden');
+  renderNodes('unknown');
+  // Apply cached state immediately if available
+  if (stateCache[traceId]) applyState(stateCache[traceId]);
+  pollStatus();
+  clearInterval(pollInterval);
+  pollInterval = setInterval(pollStatus, 2000);
+}
 
-    function updateTimerDisplay() {
-        if (!STATE.startTime) return;
-        const elapsed = Date.now() - STATE.startTime;
-        document.getElementById('exec-timer').innerText = formatDuration(elapsed);
-        requestAnimationFrame(updateTimerDisplay);
-    }
+// ── Poll ──
+async function pollStatus() {
+  if (!currentTraceId) return;
+  try {
+    const data = await fetch(`${API}/api/status/${currentTraceId}`).then(r => r.json());
+    // Merge with WS cache for richer display
+    const merged = { ...data, ...(stateCache[currentTraceId]||{}), ...data };
+    applyState(merged);
+    // Stop polling once terminal
+    if (DONE_STATUSES.includes(data.status)) { clearInterval(pollInterval); pollInterval = null; }
+  } catch(_) {}
+}
 
-    function updateTimelineItem(nodeName, data) {
-        const nodeMap = {
-            'scout': { elem: 'scout', icon: 'visibility' },
-            'investigator': { elem: 'investigator', icon: 'search' },
-            'architect': { elem: 'architect', icon: 'construction' },
-            'verifier': { elem: 'verifier', icon: 'check_circle' }
-        };
+// ── Apply state to UI ──
+function applyState(state) {
+  currentState = state;
+  const status = state.status || 'unknown';
+  renderNodes(status);
+  updateHeader(state);
+  updateSidePanels(state);
+}
 
-        if (!nodeMap[nodeName]) return;
-        const config = nodeMap[nodeName];
+function updateHeader(state) {
+  setText('hdr-status', (state.status||'—').replace(/_/g,' '));
+  setText('hdr-iters', state.iteration_count ?? '—');
+  const flagEl = document.getElementById('hdr-flag');
+  if (state.has_flag || state.captured_flag) {
+    flagEl.textContent = state.captured_flag || '✓';
+    flagEl.style.color = '#a8ffd2';
+  } else {
+    flagEl.textContent = '—';
+    flagEl.style.color = '#849396';
+  }
+}
 
-        // Update data
-        if (data.target_topography) {
-            const elem = document.getElementById(`${config.elem}-data`);
-            if (elem) elem.innerText = data.target_topography;
-        }
-        if (data.current_hypothesis) {
-            const elem = document.getElementById(`${config.elem}-hypothesis`);
-            if (elem) elem.innerText = data.current_hypothesis;
-        }
-        if (data.exploit_proof) {
-            const elem = document.getElementById(`${config.elem}-exploit`);
-            if (elem) elem.innerText = data.exploit_proof;
-        }
-        if (data.captured_flag) {
-            const elem = document.getElementById(`${config.elem}-flag`);
-            if (elem) elem.innerText = data.captured_flag;
-        }
-        if (data.remediation_patch) {
-            const elem = document.getElementById(`${config.elem}-patch`);
-            if (elem) {
-                elem.innerHTML = '';
-                const lines = data.remediation_patch.split('\n').slice(0, 20);
-                lines.forEach(line => {
-                    const lineDiv = document.createElement('div');
-                    if (line.startsWith('+') && !line.startsWith('+++')) {
-                        lineDiv.className = 'text-tertiary';
-                    } else if (line.startsWith('-') && !line.startsWith('---')) {
-                        lineDiv.className = 'text-error';
-                    }
-                    lineDiv.innerText = line;
-                    elem.appendChild(lineDiv);
-                });
-            }
-        }
-    }
+// ── Render pipeline nodes ──
+const STATUS_TO_NODE = {
+  queued:'ingress', scouting:'scout', summarizing:'summarizer',
+  investigating:'investigator', sandbox_running:'sandbox',
+  evaluating:'evaluator', patching:'architect',
+  awaiting_approval:'human_approval', verifying:'verifier',
+  rolling_back:'rollback',
+};
 
-    // WebSocket connection
-    const ws = new WebSocket('ws://localhost:8000/ws');
+// Track which nodes are "done" (before the active one) and which are "pending"
+function getNodeState(nodeId, pipelineStatus) {
+  const activeNode = STATUS_TO_NODE[pipelineStatus];
+  const activeIdx = NODES.findIndex(n => n.id === activeNode);
+  const nodeIdx = NODES.findIndex(n => n.id === nodeId);
 
-    ws.onopen = () => {
-        console.log('Orchestration page connected to WebSocket');
-    };
+  if (pipelineStatus === 'resolved') {
+    if (nodeId === 'rollback') return 'idle';
+    return nodeIdx <= NODES.findIndex(n=>n.id==='verifier') ? 'done' : 'idle';
+  }
+  if (pipelineStatus === 'failed') return nodeId === 'rollback' ? 'error' : (nodeIdx < activeIdx ? 'done' : nodeIdx === activeIdx ? 'error' : 'idle');
+  if (pipelineStatus === 'rejected') return nodeIdx <= NODES.findIndex(n=>n.id==='human_approval') ? 'done' : 'idle';
 
-    ws.onmessage = (event) => {
-        try {
-            const data = JSON.parse(event.data);
+  if (activeIdx < 0) return 'idle';
+  if (nodeIdx < activeIdx) return 'done';
+  if (nodeIdx === activeIdx) return pipelineStatus === 'awaiting_approval' ? 'waiting' : 'active';
+  return 'idle';
+}
 
-            if (data.event === 'alert_received') {
-                STATE.startTime = Date.now();
-                STATE.executionData = data.data;
-                document.getElementById('ingress-data').innerText = JSON.stringify(data.data, null, 2).substring(0, 200);
-                updateTimerDisplay();
-            }
-            else if (data.event === 'pipeline_step') {
-                const stepData = data.data;
-                
-                Object.keys(stepData).forEach(node => {
-                    const nodeData = stepData[node];
-                    if (nodeData.status) {
-                        document.getElementById('exec-status').innerText = nodeData.status.toUpperCase();
-                        document.getElementById('exec-node').innerText = node.toUpperCase();
-                    }
-                    if (nodeData.iteration_count !== undefined) {
-                        document.getElementById('exec-iteration').innerText = nodeData.iteration_count;
-                    }
-                    updateTimelineItem(node, nodeData);
-                });
-            }
-            else if (data.event === 'pipeline_complete') {
-                document.getElementById('exec-status').innerText = 'COMPLETED';
-                const totalTime = Date.now() - STATE.startTime;
-                document.getElementById('metric-duration').innerText = formatDuration(totalTime);
-            }
+function renderNodes(status) {
+  const container = document.getElementById('pipeline-nodes');
+  const html = NODES.map((node, idx) => {
+    const state = getNodeState(node.id, status);
+    const stateClass = { active:'node-active', done:'node-done', error:'node-error', waiting:'node-waiting', idle:'node-idle' }[state];
+    const iconColor = { active:'color:#c3f5ff', done:'color:#a8ffd2', error:'color:#ffb4ab', waiting:'color:#f4d160', idle:'color:#849396' }[state];
+    const labelColor = { active:'color:#c3f5ff', done:'color:#a8ffd2', error:'color:#ffb4ab', waiting:'color:#f4d160', idle:'color:#bac9cc' }[state];
+    const pulse = (state === 'active' || state === 'waiting') ? 'animate-pulse' : '';
+    const connClass = state === 'active' ? 'connector-active' : (state === 'done' ? 'connector-done' : '');
+    const interruptBadge = node.interrupt ? `<span style="color:#f4d160;font-size:9px;letter-spacing:0.05em;font-family:Geist,sans-serif">⚡ INTERRUPT</span>` : '';
 
-        } catch (e) {
-            console.error('Parse error:', e);
-        }
-    };
+    const connector = idx < NODES.length - 1
+      ? `<div class="connector ${connClass}" style="height:20px"></div>` : '';
+
+    return `<div>
+      <div class="${stateClass} rounded-xl border p-sm cursor-pointer transition-all hover:brightness-110" onclick="">
+        <div class="flex items-center gap-sm">
+          <div class="w-7 h-7 rounded flex items-center justify-center shrink-0" style="background:rgba(255,255,255,0.05)">
+            <span class="material-symbols-outlined text-[18px] ${pulse}" style="${iconColor}">${node.icon}</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-label-caps text-[10px]" style="${labelColor}">${node.label}</div>
+            ${interruptBadge}
+          </div>
+          ${state === 'active' ? '<span class="w-1.5 h-1.5 rounded-full animate-pulse shrink-0" style="background:#c3f5ff"></span>' : ''}
+          ${state === 'done' ? '<span class="material-symbols-outlined text-[14px] shrink-0" style="color:#a8ffd2">check</span>' : ''}
+          ${state === 'error' ? '<span class="material-symbols-outlined text-[14px] shrink-0" style="color:#ffb4ab">error</span>' : ''}
+          ${state === 'waiting' ? '<span class="material-symbols-outlined text-[14px] shrink-0 animate-pulse" style="color:#f4d160">hourglass_empty</span>' : ''}
+        </div>
+      </div>
+      ${connector}
+    </div>`;
+  }).join('');
+  container.innerHTML = html;
+}
+
+// ── Update side panels ──
+function updateSidePanels(state) {
+  // Approval panel
+  const ap = document.getElementById('approval-panel');
+  if (state.status === 'awaiting_approval' || state.human_approval_pending) {
+    ap.classList.remove('hidden');
+    const patch = state.remediation_patch || '(patch not yet streamed — it will appear via WebSocket)';
+    document.getElementById('patch-display').textContent = patch;
+  } else {
+    ap.classList.add('hidden');
+  }
+
+  // State cards
+  showCard('card-scout', 'val-scout', state.scout_findings || state.target_topography);
+  showCard('card-topo', 'val-topo', state.target_topography && state.scout_findings ? state.target_topography : null);
+  showCard('card-hypothesis', 'val-hypothesis', state.current_hypothesis);
+  showCard('card-exploit', 'val-exploit', state.exploit_proof);
+  showCard('card-flag', 'val-flag', state.captured_flag, true);
+  showCard('card-failure', 'val-failure', state.failure_reason);
+}
+
+function showCard(cardId, valId, value, isFlag) {
+  const card = document.getElementById(cardId);
+  const val = document.getElementById(valId);
+  if (!card || !val) return;
+  if (value) {
+    card.style.display = '';
+    val.textContent = value;
+  } else {
+    card.style.display = 'none';
+  }
+}
+
+// ── Approve / Reject ──
+async function approvePatch() {
+  if (!currentTraceId) return;
+  document.getElementById('approve-btn').textContent = 'Applying…';
+  try {
+    const r = await fetch(`${API}/api/approve/${currentTraceId}`, {method:'POST'});
+    const d = await r.json();
+    if (!r.ok) alert(d.error || 'Failed');
+    else { document.getElementById('approval-panel').classList.add('hidden'); pollStatus(); }
+  } catch(e) { alert(e.message); }
+  document.getElementById('approve-btn').innerHTML = '<span class="material-symbols-outlined text-[16px]">check_circle</span> Apply Patch';
+}
+
+async function rejectPatch() {
+  if (!currentTraceId) return;
+  document.getElementById('reject-btn').textContent = 'Rejecting…';
+  try {
+    const r = await fetch(`${API}/api/reject/${currentTraceId}`, {method:'POST'});
+    const d = await r.json();
+    if (!r.ok) alert(d.error || 'Failed');
+    else { document.getElementById('approval-panel').classList.add('hidden'); pollStatus(); }
+  } catch(e) { alert(e.message); }
+  document.getElementById('reject-btn').innerHTML = '<span class="material-symbols-outlined text-[16px]">cancel</span> Reject';
+}
+
+function setText(id, v) { const el=document.getElementById(id); if(el) el.textContent=v; }
+
+// ── Init ──
+connectWS();
+fetchTraceList();
+renderNodes('unknown');
+
+if (urlTrace) {
+  // Wait for select to populate then select it
+  setTimeout(async () => {
+    await fetchTraceList();
+    const sel = document.getElementById('trace-select');
+    sel.value = urlTrace;
+    selectTrace(urlTrace);
+  }, 200);
+}
+
+setInterval(fetchTraceList, 10000);
 </script>
-</body></html>
+</body>
+</html>

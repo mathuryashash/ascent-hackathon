@@ -30,6 +30,8 @@ app.use((req, res, next) => {
 // ── Static files ─────────────────────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
+app.use(express.json());
+
 // ── Utility ──────────────────────────────────────────────────────────────────
 async function orchestratorFetch(urlPath, options = {}) {
   const url = `${ORCHESTRATOR_URL}${urlPath}`;
@@ -42,12 +44,9 @@ async function orchestratorFetch(urlPath, options = {}) {
   });
 }
 
-function log(level, msg, extra = {}) {
-  console.log(JSON.stringify({ level, msg, ts: new Date().toISOString(), ...extra }));
-}
-
 // ── API Proxy ─────────────────────────────────────────────────────────────────
 
+// Special: Health Check
 app.get('/api/health', async (req, res) => {
   try {
     const resp = await orchestratorFetch('/health');
@@ -57,6 +56,7 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
+// Special: Trigger (Simulates a signed SIEM alert)
 app.post('/api/trigger', async (req, res) => {
   if (!WEBHOOK_SECRET) {
     return res.status(503).json({ error: 'WEBHOOK_SECRET not configured on gateway' });
@@ -96,6 +96,31 @@ app.post('/api/trigger', async (req, res) => {
     res.json(data);
   } catch (err) {
     res.status(502).json({ error: 'Orchestrator unreachable', detail: err.message });
+  }
+});
+
+// Generic Proxy for all other /api requests
+app.all('/api/*', async (req, res) => {
+  const orchestratorPath = req.path.replace(/^\/api/, '');
+  try {
+    const options = {
+      method: req.method,
+      headers: {},
+    };
+
+    if (req.headers['authorization']) {
+      options.headers['Authorization'] = req.headers['authorization'];
+    }
+
+    if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
+      options.body = JSON.stringify(req.body);
+    }
+
+    const resp = await orchestratorFetch(orchestratorPath, options);
+    const data = await resp.json();
+    res.status(resp.status).json(data);
+  } catch (err) {
+    res.status(502).json({ error: 'Proxy error', detail: err.message });
   }
 });
 
