@@ -1,4 +1,0 @@
-# Dependencies for tools.py — install in the orchestrator environment
-docker==7.1.0
-tenacity==8.3.0
-requests==2.32.3

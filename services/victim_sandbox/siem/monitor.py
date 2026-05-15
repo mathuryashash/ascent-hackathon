@@ -26,6 +26,12 @@ log = logging.getLogger(__name__)
 WEBHOOK_URL = os.getenv("WEBHOOK_URL", "http://orchestrator:8000/webhook")
 WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "changeme")
 VICTIM_CONTAINER = os.getenv("VICTIM_CONTAINER", "chimera-victim-1")
+
+if WEBHOOK_SECRET == "changeme":
+    raise RuntimeError(
+        "WEBHOOK_SECRET must be set to a strong secret in the environment. "
+        "The default value 'changeme' is not permitted in any environment."
+    )
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "5"))
 
 # Patterns that indicate SQLi attempt in the victim's access logs

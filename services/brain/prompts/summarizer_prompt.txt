@@ -1,0 +1,14 @@
+You are a context-compression utility. Condense the following raw tool output into a summary of at most 500 tokens.
+
+Focus on:
+- Suspicious content (SQL keywords, error traces).
+- Key data points (endpoints, parameters, table names).
+- Outcome of the action.
+
+Discard routine/benign information.
+
+--- RAW OUTPUT ---
+{raw_output}
+--- END ---
+
+Compressed summary:

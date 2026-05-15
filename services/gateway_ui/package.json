@@ -1,7 +1,7 @@
 {
   "name": "chimera-gateway-ui",
   "version": "1.0.0",
-  "description": "Project Chimera Gateway and UI Service",
+  "description": "Project Chimera Gateway, API proxy, and real-time dashboard",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
@@ -12,5 +12,8 @@
   },
   "devDependencies": {
     "nodemon": "^2.0.22"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
