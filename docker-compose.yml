@@ -55,8 +55,8 @@ services:
   # ── Orchestrator: LangGraph brain (built by Member 2) ───────────────────
   orchestrator:
     build:
-      context: services/brain
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/brain/Dockerfile
     container_name: chimera-orchestrator-1
     ports:
       - "8000:8000"

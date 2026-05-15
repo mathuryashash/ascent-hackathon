@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 RUN useradd --system --uid 1001 --no-create-home appuser \
  && apt-get update \
- && apt-get install -y --no-install-recommends sqlite3 \
+ && apt-get install -y --no-install-recommends sqlite3 curl \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
