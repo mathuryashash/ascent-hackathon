@@ -98,6 +98,7 @@ services:
       - WEBHOOK_SECRET=${WEBHOOK_SECRET}
       - VICTIM_CONTAINER=chimera-victim-1
       - POLL_INTERVAL=5
+    user: root
     depends_on:
       - victim
       - orchestrator
