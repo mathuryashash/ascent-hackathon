@@ -1,0 +1,7 @@
+# Project Chimera Code Ownership
+# This file ensures that any PR touching a specific folder requires approval from the designated owner.
+# Note: Branch Protection must be enabled in GitHub settings to enforce these reviews.
+
+/services/victim_sandbox/ @username1
+/services/brain/          @username2
+/services/gateway_ui/     @username3
