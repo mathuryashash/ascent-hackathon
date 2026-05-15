@@ -9,10 +9,13 @@ services:
     container_name: chimera-victim
     networks:
       - chimera-internal
+      - chimera-external # Temporarily added so the host can view the UI
     volumes:
       - ./services/victim_sandbox/logs:/app/logs
       # database.db is created inside the container by init_db.py — do NOT bind-mount it
-    # NOT exposed to host — internal network only
+    ports:
+      - "5000:5000"  # Exposing to host so you can view the new UI
+    # NOT exposed to host — internal network only (except for this port mapping for the demo)
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:5000/health || exit 1"]
       interval: 10s
