@@ -1,0 +1,76 @@
+services:
+  # ─────────────────────────────────────────
+  # SERVICE 1: VICTIM (Intentionally Vulnerable Flask App)
+  # ─────────────────────────────────────────
+  victim:
+    build:
+      context: ./services/victim_sandbox
+      dockerfile: Dockerfile
+    container_name: chimera-victim
+    networks:
+      - chimera-internal
+    volumes:
+      - ./services/victim_sandbox/logs:/app/logs
+      # database.db is created inside the container by init_db.py — do NOT bind-mount it
+    # NOT exposed to host — internal network only
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────
+  # SERVICE 2: SANDBOX (Isolated execution environment)
+  # ─────────────────────────────────────────
+  sandbox:
+    build:
+      context: ./services/sandbox
+      dockerfile: Dockerfile
+    container_name: chimera-sandbox
+    networks:
+      - chimera-internal  # ONLY internal — NO internet access
+    command: tail -f /dev/null
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: "0.5"
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────
+  # SERVICE 3: ORCHESTRATOR (LangGraph Brain — Member 2 fills in routes)
+  # ─────────────────────────────────────────
+  orchestrator:
+    build:
+      context: ./services/brain
+      dockerfile: Dockerfile
+    container_name: chimera-orchestrator
+    networks:
+      - chimera-internal   # Can reach victim & sandbox
+      - chimera-external   # Can reach Grok API on the internet
+    ports:
+      - "8000:8000"        # FastAPI webhook ingress + frontend polling
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock   # Docker SDK to exec into sandbox
+      - ./services/victim_sandbox:/app/victim-src   # Victim source for patching
+      - ./services/victim_sandbox/logs:/app/victim-logs  # Victim logs for get_logs tool
+    env_file:
+      - .env
+    depends_on:
+      victim:
+        condition: service_healthy
+    restart: unless-stopped
+
+# ─────────────────────────────────────────
+# NETWORKS
+# ─────────────────────────────────────────
+networks:
+  chimera-internal:
+    driver: bridge
+    internal: true    # CRITICAL: blocks all internet access for sandbox + victim
+  chimera-external:
+    driver: bridge
+    internal: false   # Orchestrator gets internet for Grok API calls
+
