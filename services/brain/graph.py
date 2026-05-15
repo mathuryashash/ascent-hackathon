@@ -271,6 +271,8 @@ def ingress_node(state: GraphState) -> GraphState:
         "status": "scouting",
         "iteration_count": 0,
     }
+    # Rate limit buffer for Free Tier
+    await asyncio.sleep(4)
     return new_state
 
 # ---------------------------------------------------------------------------
@@ -314,6 +316,7 @@ async def scout_node(state: GraphState) -> GraphState:
 # ---------------------------------------------------------------------------
 
 async def summarizer_node(state: GraphState) -> GraphState:
+    await asyncio.sleep(4)
     log.info("summarizer_start", trace_id=state["trace_id"])
     raw_content = state["scout_findings"]
     prompt = _load_prompt("summarizer").format(raw_output=_truncate(raw_content, 4000))
@@ -349,7 +352,6 @@ async def investigator_node(state: GraphState) -> GraphState:
         SystemMessage(content=system_prompt),
         HumanMessage(content=context),
     ]
-
     response = await _invoke_with_retry(
         llm, messages, timeout=60.0, demo_stub=_DEMO_INVESTIGATOR
     )
@@ -430,6 +432,7 @@ def route_after_evaluator(state: GraphState) -> str:
 # ---------------------------------------------------------------------------
 
 async def architect_node(state: GraphState) -> GraphState:
+    await asyncio.sleep(4)
     log.info("architect_start", trace_id=state["trace_id"])
 
     src_result = await asyncio.to_thread(get_victim_source, "app.py")
