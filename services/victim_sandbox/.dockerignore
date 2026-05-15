@@ -1,0 +1,17 @@
+# Never copy the database or logs into the Docker image
+database.db
+*.db
+*.sqlite
+*.sqlite3
+
+# Never copy logs into the image
+logs/*.log
+
+# Python cache
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Secrets
+.env

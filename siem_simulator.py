@@ -1,0 +1,179 @@
+#!/usr/bin/env python3
+"""
+SIEM Simulator for Project Chimera
+Tails the victim's access.log in real time and fires webhooks when it detects
+suspicious SQL Injection patterns.
+
+Dependencies: stdlib only (no pip installs required)
+Usage: python siem_simulator.py
+"""
+
+import os
+import re
+import time
+import uuid
+import json
+import hmac
+import hashlib
+import datetime
+import urllib.request
+import urllib.error
+
+# ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
+
+LOG_PATH = os.environ.get("VICTIM_LOG_PATH", "./services/victim_sandbox/logs/access.log")
+WEBHOOK_URL = os.environ.get("WEBHOOK_URL", "http://localhost:8000/webhook/alert")
+WEBHOOK_SECRET = os.environ.get("WEBHOOK_SECRET", "")
+if not WEBHOOK_SECRET or len(WEBHOOK_SECRET) < 32:
+    raise RuntimeError(
+        "WEBHOOK_SECRET must be set to a value of at least 32 characters. "
+        "Set WEBHOOK_SECRET in your .env before starting the SIEM simulator."
+    )
+DEBOUNCE_SECONDS = 1  # Fire at most one alert per pattern per second
+
+# Patterns that trigger an alert
+SUSPICIOUS_PATTERNS = [
+    r"UNION\s+SELECT",
+    r"UNION",
+    r"' OR",
+    r"OR 1=1",
+    r"--\s",
+    r"--;",
+    r"--$",
+    r"DROP TABLE",
+]
+
+# Compiled regex for efficiency
+COMPILED_PATTERNS = [(p, re.compile(p, re.IGNORECASE)) for p in SUSPICIOUS_PATTERNS]
+
+# ---------------------------------------------------------------------------
+# Debounce State
+# ---------------------------------------------------------------------------
+
+last_alert_time: dict[str, float] = {}
+
+
+def should_fire(pattern: str) -> bool:
+    """Returns True if we haven't fired for this pattern within the debounce window."""
+    now = time.time()
+    last = last_alert_time.get(pattern, 0)
+    if now - last > DEBOUNCE_SECONDS:
+        last_alert_time[pattern] = now
+        return True
+    return False
+
+
+# ---------------------------------------------------------------------------
+# Alert Firing
+# ---------------------------------------------------------------------------
+
+def build_payload(log_line: str, matched_pattern: str) -> dict:
+    """Constructs the standardized webhook alert payload."""
+    # Extract route from log line if possible (format: GET /search?q=...)
+    route_match = re.search(r"(GET|POST|PUT|DELETE)\s+(/\S*)", log_line)
+    route = route_match.group(2).split("?")[0] if route_match else "/unknown"
+
+    return {
+        "alert_id": str(uuid.uuid4()),
+        "timestamp": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "severity": "HIGH",
+        "source": "siem_simulator",
+        "target": {
+            "host": "chimera-victim",
+            "port": 5000,
+            "service": "flask-app"
+        },
+        "trigger": {
+            "log_line": log_line.strip(),
+            "matched_pattern": matched_pattern,
+            "route": route
+        },
+        "metadata": {
+            "victim_log_path": LOG_PATH
+        }
+    }
+
+
+def fire_webhook(log_line: str, matched_pattern: str) -> None:
+    """Sends the alert payload as a POST request to the orchestrator webhook."""
+    payload = build_payload(log_line, matched_pattern)
+    alert_id = payload["alert_id"]
+
+    data = json.dumps(payload).encode("utf-8")
+    headers = {"Content-Type": "application/json"}
+    if WEBHOOK_SECRET:
+        sig = "sha256=" + hmac.HMAC(WEBHOOK_SECRET.encode(), data, hashlib.sha256).hexdigest()
+        headers["X-Webhook-Signature"] = sig
+    req = urllib.request.Request(
+        WEBHOOK_URL,
+        data=data,
+        headers=headers,
+        method="POST"
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            print(f"[SIEM] [OK] Alert fired! Pattern: {matched_pattern} | Alert ID: {alert_id} | Response: {resp.status}")
+    except urllib.error.URLError as e:
+        print(f"[SIEM] [ERR] Webhook failed (orchestrator may not be up yet): {e.reason} | Alert ID: {alert_id}")
+    except Exception as e:
+        print(f"[SIEM] [ERR] Unexpected error firing webhook: {e} | Alert ID: {alert_id}")
+
+
+# ---------------------------------------------------------------------------
+# Log Analysis
+# ---------------------------------------------------------------------------
+
+def check_line(line: str) -> None:
+    """Checks a single log line against all suspicious patterns."""
+    for pattern_str, pattern_regex in COMPILED_PATTERNS:
+        if pattern_regex.search(line):
+            if should_fire(pattern_str):
+                fire_webhook(line, pattern_str)
+            break  # Only fire once per line (first match wins)
+
+
+# ---------------------------------------------------------------------------
+# Main tail -f Loop
+# ---------------------------------------------------------------------------
+
+def wait_for_log_file(path: str) -> None:
+    """Blocks until the log file exists, printing a status every 5 seconds."""
+    if not os.path.exists(path):
+        print(f"[SIEM] [WAIT] Waiting for log file to appear at: {path}")
+        while not os.path.exists(path):
+            time.sleep(5)
+        print(f"[SIEM] [OK] Log file found. Starting tail...")
+
+
+def tail_log(path: str) -> None:
+    """Tails the log file indefinitely, processing new lines as they appear."""
+    wait_for_log_file(path)
+    print(f"[SIEM] [INFO] Tailing: {path}")
+    print(f"[SIEM] [INFO] Webhook target: {WEBHOOK_URL}")
+    print(f"[SIEM] [INFO] Watching for patterns: {[p for p, _ in COMPILED_PATTERNS]}")
+    print("-" * 70)
+
+    with open(path, "r") as f:
+        # Seek to end of file — only watch new entries
+        f.seek(0, 2)
+
+        while True:
+            line = f.readline()
+            if line:
+                check_line(line)
+            else:
+                time.sleep(0.1)  # Short sleep to avoid busy-waiting
+
+
+# ---------------------------------------------------------------------------
+# Entry Point
+# ---------------------------------------------------------------------------
+
+if __name__ == "__main__":
+    try:
+        tail_log(LOG_PATH)
+    except KeyboardInterrupt:
+        print("\n[SIEM] [STOP] Shutdown requested. SIEM Simulator stopped.")

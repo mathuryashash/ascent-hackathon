@@ -1,162 +1,391 @@
-import asyncio
-import json
-import logging
+"""
+Project Chimera — Orchestrator FastAPI App
+==========================================
+Provides the HTTP API that drives the LangGraph pipeline.
+* `/webhook/alert` – receives SIEM alerts and starts a run.
+* `/ws`            – WebSocket endpoint for real-time dashboard updates.
+* `/status/{trace_id}` – fetches the latest GraphState snapshot.
+* `/metrics`       – Prometheus metrics endpoint.
+* `/health`        – liveness probe.
+"""
+
 import os
-from typing import Dict, Any
-
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, HTTPException
+import json
+import uuid
+import hashlib
+import hmac
+import structlog
+import asyncio
+from typing import List, Dict, Any, Optional
+from fastapi import FastAPI, Request, BackgroundTasks, Header, HTTPException, WebSocket, WebSocketDisconnect, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
+from fastapi.responses import PlainTextResponse
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+import aiosqlite
 
-# Import our AI pipeline
-from member_2_ai import run_chimera_pipeline
+# Local imports
+from graph import get_graph
+from metrics import prometheus_text, record_run_start, record_run_end
+from schemas import StatusResponse, AlertPayload
+from tracing import configure_logging
 
-load_dotenv()
+configure_logging()
+log = structlog.get_logger(__name__)
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("chimera.brain")
+app = FastAPI(
+    title="Project Chimera Orchestrator",
+    description="FastAPI wrapper around the LangGraph autonomous pipeline",
+    version="1.0.0",
+)
 
-app = FastAPI(title="Chimera Orchestrator")
-
-# Allow the Gateway UI to connect from the browser
+# Allow UI (different origin) to call the API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=[os.getenv("ALLOWED_ORIGIN", "http://localhost:3001")],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Shared queue for broadcasting events to all connected UI clients
-event_queue = asyncio.Queue()
+# ---------------------------------------------------------------------------
+# WebSocket Connection Manager
+# ---------------------------------------------------------------------------
 
 class ConnectionManager:
     def __init__(self):
-        self.active_connections: list[WebSocket] = []
+        self.active_connections: List[WebSocket] = []
 
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
         self.active_connections.append(websocket)
-        logger.info(f"UI Client connected. Total: {len(self.active_connections)}")
+        log.info("ws_client_connected", count=len(self.active_connections))
 
     def disconnect(self, websocket: WebSocket):
         if websocket in self.active_connections:
             self.active_connections.remove(websocket)
-            logger.info(f"UI Client disconnected. Total: {len(self.active_connections)}")
+            log.info("ws_client_disconnected", count=len(self.active_connections))
 
-    async def broadcast(self, message: str):
-        for connection in self.active_connections:
+    async def broadcast(self, message: dict):
+        msg_str = json.dumps(message)
+        dead = []
+        for connection in list(self.active_connections):
             try:
-                await connection.send_text(message)
+                await connection.send_text(msg_str)
             except Exception as e:
-                logger.error(f"Error sending to websocket: {e}")
+                log.error("ws_broadcast_error", error=str(e))
+                dead.append(connection)
+        for conn in dead:
+            self.disconnect(conn)
 
 manager = ConnectionManager()
 
+# ---------------------------------------------------------------------------
+# State Serialization Helper
+# ---------------------------------------------------------------------------
 
-@app.post("/webhook")
-async def handle_webhook(request: Request):
-    """
-    Receives alerts from the SIEM.
-    Triggers the LangGraph AI pipeline as a background task.
-    """
-    try:
-        payload = await request.json()
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid JSON")
+def serialize_state(state: Dict[str, Any]) -> Dict[str, Any]:
+    """Ensures LangGraph state is JSON serializable for the UI."""
+    if not isinstance(state, dict):
+        return {"_raw": str(state)}
+    serialized = {}
+    for node_name, data in state.items():
+        if not isinstance(data, dict):
+            serialized[node_name] = str(data)
+            continue
 
-    # In a real app, verify the HMAC signature here
-    # signature = request.headers.get("X-Signature")
-
-    logger.info(f"Received webhook alert: {payload.get('type')}")
-    
-    # Broadcast the initial alert to the UI
-    await manager.broadcast(json.dumps({
-        "event": "alert_received",
-        "data": payload
-    }))
-
-    # Start the LangGraph pipeline in the background so we can return 202 Accepted quickly
-    asyncio.create_task(run_pipeline_and_broadcast(payload))
-
-    return {"status": "Accepted", "message": "Pipeline triggered."}
-
-
-async def run_pipeline_and_broadcast(payload: dict):
-    """
-    Runs the Member 2 AI pipeline and streams every state update to the WebSocket.
-    """
-    try:
-        # run_chimera_pipeline is an async generator that yields StateGraph updates
-        async for state_update in run_chimera_pipeline(payload):
-            # A state_update looks like {"scout_node": {"status": "investigating", ...}}
-            # We want to broadcast this to the UI
-            
-            # Convert any LangChain message objects to strings or dicts before JSON serialization
-            serialized_update = serialize_state(state_update)
-            
-            await manager.broadcast(json.dumps({
-                "event": "pipeline_step",
-                "data": serialized_update
-            }))
-            
-            # Small delay to let the UI breathe and animate
-            await asyncio.sleep(0.5)
-            
-        await manager.broadcast(json.dumps({
-            "event": "pipeline_complete"
-        }))
-        
-    except Exception as e:
-        logger.error(f"Pipeline crashed: {e}")
-        await manager.broadcast(json.dumps({
-            "event": "pipeline_error",
-            "data": str(e)
-        }))
-
-def serialize_state(state_update: dict) -> dict:
-    """Helper to ensure the state dict is JSON serializable."""
-    result = {}
-    for node_name, state_data in state_update.items():
-        result[node_name] = {}
-        for key, value in state_data.items():
-            if key == "messages":
-                # Extract content from Langchain message objects
-                result[node_name][key] = []
-                for msg in value:
-                    if hasattr(msg, "content"):
-                        # If it's a ToolMessage, maybe include the tool name
-                        if hasattr(msg, "tool_call_id") and getattr(msg, "name", None):
-                            result[node_name][key].append(f"[Tool: {msg.name}] {msg.content}")
-                        elif hasattr(msg, "tool_calls") and msg.tool_calls:
-                            result[node_name][key].append(f"[Calling Tools] {json.dumps(msg.tool_calls)}")
+        serialized[node_name] = {}
+        for k, v in data.items():
+            if k == "messages":
+                msgs = []
+                for m in v:
+                    if hasattr(m, "content"):
+                        if hasattr(m, "tool_calls") and m.tool_calls:
+                            msgs.append(f"[Tool Calls] {json.dumps(m.tool_calls)}")
                         else:
-                            result[node_name][key].append(msg.content)
+                            msgs.append(str(m.content))
                     else:
-                        result[node_name][key].append(str(msg))
+                        msgs.append(str(m))
+                serialized[node_name][k] = msgs
+            elif isinstance(v, (dict, list, str, int, float, bool, type(None))):
+                serialized[node_name][k] = v
             else:
-                result[node_name][key] = value
-    return result
+                serialized[node_name][k] = str(v)
+    return serialized
 
+# HMAC secret — mandatory; reject startup if missing or too short
+WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "")
+if not WEBHOOK_SECRET or len(WEBHOOK_SECRET) < 32:
+    raise RuntimeError(
+        "WEBHOOK_SECRET must be set to a value of at least 32 characters. "
+        "Set WEBHOOK_SECRET in your .env before starting the orchestrator."
+    )
+
+# NOTE: _early_states is an in-process dict. With multiple uvicorn workers each worker
+# has its own copy — /status may return not_found for runs started on another worker.
+# Run with a single worker (--workers 1) or migrate to Redis for multi-worker deployments.
+_early_states: dict[str, dict] = {}
+_early_state_times: dict[str, float] = {}
+_EARLY_STATE_TTL = 3600  # 1 hour
+
+def _prune_early_states() -> None:
+    now = __import__("time").time()
+    stale = [k for k, t in _early_state_times.items() if now - t > _EARLY_STATE_TTL]
+    for k in stale:
+        _early_states.pop(k, None)
+        _early_state_times.pop(k, None)
+
+def _valid_hmac(body: bytes, header_val: str) -> bool:
+    if not header_val or not header_val.startswith("sha256="):
+        return False
+    expected = "sha256=" + hmac.HMAC(WEBHOOK_SECRET.encode(), body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, header_val)
+
+# ---------------------------------------------------------------------------
+# Shared graph (built once at startup, reused across all requests)
+# ---------------------------------------------------------------------------
+_shared_conn: Optional[aiosqlite.Connection] = None
+
+@app.on_event("startup")
+async def _startup():
+    global _shared_conn
+    _shared_conn = await aiosqlite.connect("/app/checkpoints.sqlite")
+    checkpointer = AsyncSqliteSaver(_shared_conn)
+    await checkpointer.setup()
+    get_graph(checkpointer=checkpointer)
+    log.info("graph_initialized")
+
+@app.on_event("shutdown")
+async def _shutdown():
+    global _shared_conn
+    if _shared_conn:
+        await _shared_conn.close()
+        _shared_conn = None
+
+# ---------------------------------------------------------------------------
+# Admin Token Dependency
+# ---------------------------------------------------------------------------
+ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", None)
+
+async def verify_admin_token(authorization: Optional[str] = Header(default=None)) -> None:
+    """Dependency: if ADMIN_TOKEN is set, require a matching Bearer token."""
+    if not ADMIN_TOKEN:
+        return
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+    token = authorization[len("Bearer "):]
+    if not hmac.compare_digest(token, ADMIN_TOKEN):
+        raise HTTPException(status_code=401, detail="Invalid admin token")
+
+# ---------------------------------------------------------------------------
+# Background task that runs the full pipeline for a given alert.
+# ---------------------------------------------------------------------------
+async def _run_pipeline(alert_payload: dict, trace_id: str) -> None:
+    """Execute the LangGraph pipeline and broadcast updates."""
+    record_run_start(trace_id)
+    log.info("pipeline_start", trace_id=trace_id)
+    status = "failed"
+    iters = 0
+    flag = False
+    try:
+        await manager.broadcast({
+            "event": "alert_received",
+            "data": {
+                "type": alert_payload.get("trigger", {}).get("matched_pattern", "Unknown Alert"),
+                "source": alert_payload.get("source", "external"),
+                "trace_id": trace_id,
+            },
+        })
+
+        graph = get_graph()
+        init_state: Dict[str, Any] = {
+            "trace_id": trace_id,
+            "alert_payload": alert_payload,
+            "status": "queued",
+            "messages": [],
+            "iteration_count": 0,
+        }
+
+        try:
+            async for event in graph.astream(
+                init_state,
+                config={"configurable": {"thread_id": trace_id}},
+                stream_mode="updates",
+            ):
+                serialized_event = serialize_state(event)
+                await manager.broadcast({"event": "pipeline_step", "data": serialized_event})
+                await asyncio.sleep(0.5)
+
+            snapshot = await graph.aget_state({"configurable": {"thread_id": trace_id}})
+            final_state = snapshot.values if snapshot else {}
+            status = final_state.get("status", "completed")
+            iters = final_state.get("iteration_count", 0)
+            flag = bool(final_state.get("captured_flag"))
+
+            await manager.broadcast({
+                "event": "pipeline_complete",
+                "data": {"status": status, "trace_id": trace_id},
+            })
+
+        except Exception as e:
+            log.error("pipeline_error", trace_id=trace_id, error=str(e))
+            await manager.broadcast({
+                "event": "pipeline_error",
+                "trace_id": trace_id,
+                "data": {"error": str(e)},
+            })
+
+    except Exception as e:
+        log.error("pipeline_outer_error", trace_id=trace_id, error=str(e))
+    finally:
+        record_run_end(trace_id, status, iters, flag)
+
+# ---------------------------------------------------------------------------
+# API endpoints
+# ---------------------------------------------------------------------------
+
+@app.post("/webhook/alert", status_code=202)
+async def webhook_alert(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    x_webhook_signature: str = Header(default=""),
+    _token: None = Depends(verify_admin_token),
+):
+    body = await request.body()
+    if not _valid_hmac(body, x_webhook_signature):
+        raise HTTPException(status_code=401, detail="Invalid webhook signature")
+    try:
+        raw_payload = json.loads(body)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+    try:
+        alert = AlertPayload(**raw_payload)
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    trace_id = str(uuid.uuid4())
+    _prune_early_states()
+    _early_states[trace_id] = {"trace_id": trace_id, "status": "queued"}
+    _early_state_times[trace_id] = __import__("time").time()
+    background_tasks.add_task(_run_pipeline, alert.model_dump(), trace_id)
+    return {"trace_id": trace_id, "status": "queued"}
+
+DEMO_TRIGGER_ENABLED = os.getenv("DEMO_TRIGGER_ENABLED", "false").lower() == "true"
+
+@app.post("/trigger", status_code=202)
+async def trigger_demo(background_tasks: BackgroundTasks):
+    if not DEMO_TRIGGER_ENABLED:
+        raise HTTPException(status_code=403, detail="Demo trigger not enabled. Set DEMO_TRIGGER_ENABLED=true.")
+    import datetime
+    payload = {
+        "alert_id": str(uuid.uuid4()),
+        "timestamp": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "severity": "HIGH",
+        "source": "ui_trigger",
+        "target": {"host": "chimera-victim", "port": 5000, "service": "flask-app"},
+        "trigger": {
+            "log_line": "GET /search?q=%27+UNION+SELECT+1,value,%27x%27,0+FROM+secrets+WHERE+key=%27flag%27--",
+            "matched_pattern": "UNION SELECT",
+            "route": "/search"
+        }
+    }
+    trace_id = str(uuid.uuid4())
+    _prune_early_states()
+    _early_states[trace_id] = {"trace_id": trace_id, "status": "queued"}
+    _early_state_times[trace_id] = __import__("time").time()
+    background_tasks.add_task(_run_pipeline, payload, trace_id)
+    return {"trace_id": trace_id, "status": "queued"}
+
+@app.get("/status/{trace_id}", response_model=StatusResponse)
+async def status(trace_id: str):
+    graph = get_graph()
+    try:
+        snapshot = await graph.aget_state({"configurable": {"thread_id": trace_id}})
+        if snapshot and snapshot.values:
+            sv = snapshot.values
+            return StatusResponse(
+                trace_id=trace_id,
+                status=sv.get("status", "unknown"),
+                iteration_count=sv.get("iteration_count", 0),
+                current_node=sv.get("current_node"),
+                has_flag=bool(sv.get("captured_flag")),
+                human_approval_pending=sv.get("human_approved") is None and sv.get("status") == "awaiting_approval",
+            )
+        early = _early_states.get(trace_id)
+        if early:
+            return StatusResponse(trace_id=trace_id, status=early.get("status", "unknown"))
+        return StatusResponse(trace_id=trace_id, status="not_found")
+    except Exception as exc:
+        log.warning("state_store_unavailable", trace_id=trace_id, error=str(exc))
+        return {"trace_id": trace_id, "status": "unknown", "error": "state_store_unavailable"}
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    """
-    WebSocket endpoint for the Gateway UI.
-    """
     await manager.connect(websocket)
     try:
         while True:
-            # We just keep the connection open, waiting for client messages if any
-            data = await websocket.receive_text()
-            logger.info(f"UI sent: {data}")
+            await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
+async def _resume_pipeline(trace_id: str) -> None:
+    """Resume graph execution after human_approval interrupt and broadcast result."""
+    graph = get_graph()
+    config = {"configurable": {"thread_id": trace_id}}
+    try:
+        async for event in graph.astream(None, config=config, stream_mode="updates"):
+            await manager.broadcast({"event": "pipeline_step", "data": serialize_state(event)})
+            await asyncio.sleep(0.1)
+        snapshot = await graph.aget_state(config)
+        final_state = snapshot.values if snapshot else {}
+        status = final_state.get("status", "completed")
+        record_run_end(trace_id, status, final_state.get("iteration_count", 0), bool(final_state.get("captured_flag")))
+        await manager.broadcast({"event": "pipeline_complete", "data": {"status": status, "trace_id": trace_id}})
+    except Exception as e:
+        log.error("resume_error", trace_id=trace_id, error=str(e))
+        await manager.broadcast({"event": "pipeline_error", "trace_id": trace_id, "data": {"error": str(e)}})
+
+
+@app.post("/approve/{trace_id}", status_code=202)
+async def approve_patch(trace_id: str, background_tasks: BackgroundTasks, _token: None = Depends(verify_admin_token)):
+    """Set human_approved=True and resume the graph past the human_approval interrupt."""
+    graph = get_graph()
+    config = {"configurable": {"thread_id": trace_id}}
+    snapshot = await graph.aget_state(config)
+    if not snapshot or not snapshot.next:
+        raise HTTPException(status_code=404, detail="No paused pipeline found for this trace_id")
+    await graph.aupdate_state(config, {"human_approved": True})
+    background_tasks.add_task(_resume_pipeline, trace_id)
+    await manager.broadcast({"event": "human_approved", "data": {"trace_id": trace_id}})
+    return {"trace_id": trace_id, "status": "resuming"}
+
+
+@app.post("/reject/{trace_id}", status_code=202)
+async def reject_patch(trace_id: str, _token: None = Depends(verify_admin_token)):
+    """Set human_approved=False — pipeline ends without applying the patch."""
+    graph = get_graph()
+    config = {"configurable": {"thread_id": trace_id}}
+    snapshot = await graph.aget_state(config)
+    if not snapshot or not snapshot.next:
+        raise HTTPException(status_code=404, detail="No paused pipeline found for this trace_id")
+    await graph.aupdate_state(config, {"human_approved": False, "status": "rejected"})
+    await manager.broadcast({"event": "human_rejected", "data": {"trace_id": trace_id}})
+    await manager.broadcast({"event": "pipeline_complete", "data": {"status": "rejected", "trace_id": trace_id}})
+    return {"trace_id": trace_id, "status": "rejected"}
+
+
+@app.get("/traces")
+def list_traces():
+    return {"traces": list(_early_states.values())}
+
+@app.get("/metrics")
+def metrics_endpoint():
+    data = prometheus_text()
+    if data is None:
+        return PlainTextResponse("# prometheus_client not available\n", status_code=503, media_type="text/plain; version=0.4")
+    return PlainTextResponse(data, media_type="text/plain; version=0.4")
+
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "orchestrator"}
+    return {"status": "ok", "service": "chimera-orchestrator"}
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("services.brain.main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("ORCHESTRATOR_PORT", "8000")))

@@ -1,7 +1,7 @@
 """
 SIEM Simulator — monitors victim container logs via Docker SDK.
 When a SQL injection pattern is detected it fires a HMAC-signed
-webhook POST to the orchestrator's /webhook endpoint.
+webhook POST to the orchestrator's /webhook/alert endpoint.
 """
 import hashlib
 import hmac
@@ -23,9 +23,15 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-WEBHOOK_URL = os.getenv("WEBHOOK_URL", "http://orchestrator:8000/webhook")
+WEBHOOK_URL = os.getenv("WEBHOOK_URL", "http://orchestrator:8000/webhook/alert")
 WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "changeme")
 VICTIM_CONTAINER = os.getenv("VICTIM_CONTAINER", "chimera-victim-1")
+
+if WEBHOOK_SECRET == "changeme":
+    raise RuntimeError(
+        "WEBHOOK_SECRET must be set to a strong secret in the environment. "
+        "The default value 'changeme' is not permitted in any environment."
+    )
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "5"))
 
 # Patterns that indicate SQLi attempt in the victim's access logs
@@ -60,7 +66,7 @@ def fire_webhook(alert_type: str, evidence: str, target: str = "victim-service")
         resp = requests.post(
             WEBHOOK_URL,
             data=body,
-            headers={"Content-Type": "application/json", "X-Signature": sig},
+            headers={"Content-Type": "application/json", "X-Webhook-Signature": sig},
             timeout=10,
         )
         log.info("Webhook fired → HTTP %s", resp.status_code)
