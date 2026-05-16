@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Project Chimera Dashboard</title>
+    <!-- Google Font for better typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script>
+        // Initialise Mermaid with a dark theme
+        mermaid.initialize({ startOnLoad: true, theme: 'dark' });
+        // Simple tab logic
+        document.addEventListener('DOMContentLoaded', function () {
+            const tabs = document.querySelectorAll('.tab');
+            const contents = document.querySelectorAll('.tab-content');
+            function deactivateAll() {
+                tabs.forEach(t => t.classList.remove('active'));
+                contents.forEach(c => c.style.display = 'none');
+            }
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    deactivateAll();
+                    tab.classList.add('active');
+                    const target = tab.dataset.target;
+                    const contentEl = document.getElementById(target);
+                    if (contentEl) contentEl.style.display = 'block';
+                });
+            });
+            // Activate the first tab by default
+            if (tabs.length > 0) tabs[0].click();
+        });
+    </script>
+    <style>
+        :root {
+            --bg-primary: #121212;
+            --bg-card: #1e1e1e;
+            --bg-card-dark: #262626;
+            --text-primary: #e0e0e0;
+            --text-muted: #b0b0b0;
+            --accent: #bb86fc;
+            --border: #333333;
+            --header-bg: #1f1f1f;
+        }
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        header {
+            background-color: var(--header-bg);
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+        }
+        header h1 {
+            margin: 0;
+            font-weight: 600;
+            color: var(--accent);
+        }
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .tab {
+            cursor: pointer;
+            padding: 10px 20px;
+            background-color: var(--bg-card);
+            border-radius: 6px 6px 0 0;
+            border: 1px solid var(--border);
+            border-bottom: none;
+            color: var(--text-muted);
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .tab.active {
+            background-color: var(--bg-primary);
+            color: var(--accent);
+            font-weight: 600;
+            border-color: var(--accent);
+        }
+        .tab-content {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 0 6px 6px 6px;
+            padding: 20px;
+            display: none;
+        }
+        h2 {
+            margin-top: 0;
+            color: var(--accent);
+            margin-bottom: 10px;
+        }
+        p {
+            line-height: 1.6;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            background-color: var(--bg-card-dark);
+        }
+        th, td {
+            border: 1px solid var(--border);
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: var(--bg-card);
+            color: var(--accent);
+        }
+        tr:nth-child(even) {
+            background-color: var(--bg-primary);
+        }
+        .mermaid {
+            margin: 20px 0;
+        }
+        .placeholder-image {
+            width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+            background: #2e2e2e;
+            display: block;
+            margin: 0 auto;
+        }
+        @media (max-width: 768px) {
+            .tab {
+                flex: 1 1 100%;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Project Chimera Dashboard</h1>
+    </header>
+    <main>
+        <!-- Tab navigation -->
+        <nav class="tabs">
+            <div class="tab" data-target="overview">Overview</div>
+            <div class="tab" data-target="models">Models</div>
+            <div class="tab" data-target="pipeline">Pipeline</div>
+            <div class="tab" data-target="workflow">Workflow</div>
+        </nav>
+
+        <!-- Overview Tab (Description, Agents, Docker, Architecture placeholder) -->
+        <section class="tab-content" id="overview">
+            <h2>Description</h2>
+            <p>
+                <strong>Project Chimera</strong> is an integrated AI orchestration platform that combines multiple autonomous agents and diverse machine‑learning models to deliver end‑to‑end data processing, inference, and result delivery pipelines. The platform is containerised, highly modular and designed for rapid experimentation across LLMs, NLP classifiers, vision models, and generative AI.
+            </p>
+
+            <h2>Agents</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Agent Name</th>
+                        <th>Purpose / Function</th>
+                        <th>Implemented In</th>
+                        <th>Key Dependencies</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Data Ingestion Agent</td>
+                        <td>Collects raw data from APIs, file systems, and streams.</td>
+                        <td>Python (FastAPI)</td>
+                        <td>requests, pydantic, aiohttp</td>
+                    </tr>
+                    <tr>
+                        <td>Pre‑Processing Agent</td>
+                        <td>Cleanses, normalises and enriches incoming data.</td>
+                        <td>Python (Pandas, spaCy)</td>
+                        <td>pandas, spaCy, nltk</td>
+                    </tr>
+                    <tr>
+                        <td>Inference Agent</td>
+                        <td>Routes data to appropriate ML models and aggregates predictions.</td>
+                        <td>Python (Torch, Transformers)</td>
+                        <td>torch, transformers, sentence‑transformers</td>
+                    </tr>
+                    <tr>
+                        <td>Post‑Processing Agent</td>
+                        <td>Formats model outputs, persists results, and triggers notifications.</td>
+                        <td>Node.js (Express)</td>
+                        <td>express, pg, socket.io</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>Docker Containers</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Container Name</th>
+                        <th>Image</th>
+                        <th>Exposed Port(s)</th>
+                        <th>Links / Network</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>chimera-ingest</td>
+                        <td>myorg/chimera-ingest:latest</td>
+                        <td>8001</td>
+                        <td>chimera-net</td>
+                        <td>Runs Data Ingestion Agent</td>
+                    </tr>
+                    <tr>
+                        <td>chimera-preprocess</td>
+                        <td>myorg/chimera-preprocess:latest</td>
+                        <td>8002</td>
+                        <td>chimera-net</td>
+                        <td>Runs Pre‑Processing Agent</td>
+                    </tr>
+                    <tr>
+                        <td>chimera-inference</td>
+                        <td>myorg/chimera-inference:latest</td>
+                        <td>8003</td>
+                        <td>chimera-net</td>
+                        <td>Runs Inference Agent & hosts model servers</td>
+                    </tr>
+                    <tr>
+                        <td>chimera-postprocess</td>
+                        <td>myorg/chimera-postprocess:latest</td>
+                        <td>8004</td>
+                        <td>chimera-net</td>
+                        <td>Runs Post‑Processing Agent</td>
+                    </tr>
+                    <tr>
+                        <td>postgres-db</td>
+                        <td>postgres:15-alpine</td>
+                        <td>5432</td>
+                        <td>chimera-net</td>
+                        <td>Persists results & logs</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>High‑Level Architecture Diagram</h2>
+            <p>(Replace the placeholder image below with the actual architecture diagram.)</p>
+            <img class="placeholder-image" src="architecture-placeholder.png" alt="Architecture diagram placeholder" />
+        </section>
+
+        <!-- Models Tab -->
+        <section class="tab-content" id="models">
+            <h2>Models Used</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Model</th>
+                        <th>Type</th>
+                        <th>Version / Checkpoint</th>
+                        <th>Primary Use‑Case</th>
+                        <th>Consumed By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>GPT‑4 Turbo</td>
+                        <td>Large Language Model</td>
+                        <td>v4.0.3 (OpenAI)</td>
+                        <td>Generative text & chat</td>
+                        <td>Inference Agent</td>
+                    </tr>
+                    <tr>
+                        <td>BERT‑base‑uncased</td>
+                        <td>Transformer (NLP Classification)</td>
+                        <td>v1.0 (HuggingFace)</td>
+                        <td>Sentiment & topic classification</td>
+                        <td>Inference Agent</td>
+                    </tr>
+                    <tr>
+                        <td>ResNet‑50</td>
+                        <td>Convolutional Neural Network</td>
+                        <td>v2.2 (PyTorch Hub)</td>
+                        <td>Image feature extraction</td>
+                        <td>Inference Agent</td>
+                    </tr>
+                    <tr>
+                        <td>Stable Diffusion 2.1</td>
+                        <td>Diffusion (Image Generation)</td>
+                        <td>v2.1 (CompVis)</td>
+                        <td>Generate visual assets from prompts</td>
+                        <td>Inference Agent</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Pipeline Tab -->
+        <section class="tab-content" id="pipeline">
+            <h2>Pipeline Flow</h2>
+            <div class="mermaid">
+                graph TD
+                    subgraph "Agents"
+                        A[Data Ingestion Agent] --> B[Pre‑Processing Agent]
+                        B --> C[Inference Agent]
+                        C --> D[Post‑Processing Agent]
+                    end
+                    subgraph "Models"
+                        M1[GPT‑4 Turbo]
+                        M2[BERT‑base]
+                        M3[ResNet‑50]
+                        M4[Stable Diffusion]
+                        M1 --> C
+                        M2 --> C
+                        M3 --> C
+                        M4 --> C
+                    end
+                    D --> E[(Results Store – PostgreSQL)]
+                    style A fill:#e3f2fd,stroke:#2196F3,stroke-width:2px
+                    style B fill:#e8f5e9,stroke:#4CAF50,stroke-width:2px
+                    style C fill:#fff3e0,stroke:#FF9800,stroke-width:2px
+                    style D fill:#fce4ec,stroke:#E91E63,stroke-width:2px
+            </div>
+        </section>
+
+        <!-- Workflow Tab -->
+        <section class="tab-content" id="workflow">
+            <h2>System Layout (Docker Network)</h2>
+            <div class="mermaid">
+                graph LR
+                    subgraph "Docker Network: chimera-net"
+                        ING["chimera-ingest\n(8001)"]
+                        PRE["chimera-preprocess\n(8002)"]
+                        INF["chimera-inference\n(8003)"]
+                        POST["chimera-postprocess\n(8004)"]
+                        DB[(PostgreSQL\n5432)]
+                    end
+                    ING --> PRE
+                    PRE --> INF
+                    INF --> POST
+                    POST --> DB
+                    style ING fill:#e3f2fd,stroke:#2196F3,stroke-width:2px
+                    style PRE fill:#e8f5e9,stroke:#4CAF50,stroke-width:2px
+                    style INF fill:#fff3e0,stroke:#FF9800,stroke-width:2px
+                    style POST fill:#fce4ec,stroke:#E91E63,stroke-width:2px
+                    style DB fill:#f5f5f5,stroke:#9E9E9E,stroke-width:1px
+            </div>
+        </section>
+    </main>
+</body>
+</html>

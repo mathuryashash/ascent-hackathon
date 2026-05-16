@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Project Chimera Dashboard</title>
+    <!-- Tailwind CSS (with container‑queries plugin) -->
+    <script src="https://cdn.tailwindcss.com?plugins=container-queries"></script>
+    <!-- Material Symbols Outlined for icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <!-- Mermaid for diagram rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        background: '#000000',            // pure black
+                        accent: '#00ffea',                // neon cyan accent
+                        "accent‑magenta": '#ff00ff',      // neon magenta
+                        "glass-bg": 'rgba(10, 10, 10, 0.75)', // dark translucent surface
+                        "glass-border": 'rgba(255,255,255,0.1)'
+                    },
+                    borderRadius: {
+                        DEFAULT: '0.15rem',
+                        lg: '0.25rem',
+                        xl: '0.5rem'
+                    },
+                    fontFamily: {
+                        body: ['Inter'],
+                        headline: ['Geist']
+                    },
+                    fontSize: {
+                        sm: ['0.875rem', { lineHeight: '1.25' }],
+                        base: ['1rem', { lineHeight: '1.5' }],
+                        lg: ['1.125rem', { lineHeight: '1.75' }],
+                        xl: ['1.25rem', { lineHeight: '1.75' }],
+                        '2xl': ['1.5rem', { lineHeight: '2' }]
+                    }
+                }
+            }
+        };
+    </script>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: var(--tw-bg-glass-bg);
+            border: 1px solid var(--tw-border-glass-border);
+            backdrop-filter: blur(12px);
+        }
+        /* neon glowing hover for tables rows */
+        .table-row:hover {
+            background: var(--tw-bg-accent);
+            color: var(--tw-text-background);
+        }
+        .neon-text {
+            color: var(--tw-text-accent);
+            text-shadow: 0 0 6px var(--tw-text-accent), 0 0 12px var(--tw-text-accent);
+        }
+    </style>
+    <script>
+        // Initialise Mermaid when the DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            mermaid.initialize({ startOnLoad: true, theme: 'dark' });
+        });
+    </script>
+</head>
+<body class="bg-background text-on-background font-body min-h-screen flex flex-col overflow-hidden">
+    <!-- Header -->
+    <header class="bg-glass-bg border-b border-glass-border p-4 flex items-center justify-between">
+        <h1 class="text-2xl font-headline neon-text">Project Chimera Dashboard</h1>
+        <div class="flex gap-4 items-center">
+            <span class="material-symbols-outlined text-accent cursor-pointer" title="Notifications">notifications</span>
+            <span class="material-symbols-outlined text-accent cursor-pointer" title="Settings">settings</span>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-6">
+        <div class="max-w-7xl mx-auto space-y-12">
+            <!-- Overview Section -->
+            <section id="overview">
+                <h2 class="text-2xl font-headline neon-text mb-4">Overview</h2>
+                <p class="text-base text-on-background">
+                    <strong>Project Chimera</strong> is a modular AI orchestration platform that brings together autonomous agents and a suite of machine‑learning models to provide end‑to‑end data ingestion, processing, inference, and result delivery. The system runs in isolated Docker containers, enabling rapid experimentation, reproducible environments, and easy scaling across compute resources.
+                </p>
+            </section>
+
+            <!-- Agents Section -->
+            <section id="agents">
+                <h2 class="text-2xl font-headline neon-text mb-4">Agents</h2>
+                <div class="glass-panel p-4 overflow-x-auto">
+                    <table class="w-full table-auto text-sm">
+                        <thead class="text-accent">
+                            <tr>
+                                <th class="p-2 text-left">Agent Name</th>
+                                <th class="p-2 text-left">Purpose / Function</th>
+                                <th class="p-2 text-left">Implemented In</th>
+                                <th class="p-2 text-left">Key Dependencies</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-on-background">
+                            <tr class="table-row bg-glass-bg hover:bg-accent transition-colors">
+                                <td class="p-2">Data Ingestion Agent</td>
+                                <td class="p-2">Collects raw data from APIs, file systems and streams.</td>
+                                <td class="p-2">Python (FastAPI)</td>
+                                <td class="p-2">requests, pydantic, aiohttp</td>
+                            </tr>
+                            <tr class="table-row bg-glass-bg hover:bg-accent transition-colors">
+                                <td class="p-2">Pre‑Processing Agent</td>
+                                <td class="p-2">Cleanses, normalises and enriches incoming data.</td>
+                                <td class="p-2">Python (Pandas, spaCy)</td>
+                                <td class="p-2">pandas, spaCy, nltk</td>
+                            </tr>
+                            <tr class="table-row bg-glass-bg hover:bg-accent transition-colors">
+                                <td class="p-2">Inference Agent</td>
+                                <td class="p-2">Routes data to the appropriate ML models and aggregates predictions.</td>
+                                <td class="p-2">Python (Torch, Transformers)</td>
+                                <td class="p-2">torch, transformers, sentence‑transformers</td>
+                            </tr>
+                            <tr class="table-row bg-glass-bg hover:bg-accent transition-colors">
+                                <td class="p-2">Post‑Processing Agent</td>
+                                <td class="p-2">Formats model outputs, persists results, and triggers notifications.</td>
+                                <td class="p-2">Node.js (Express)</td>
+                                <td class="p-2">express, pg, socket.io</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Models Section (placeholder – replace with your actual models) -->
+            <section id="models">
+                <h2 class="text-2xl font-headline neon-text mb-4">Models Used</h2>
+                <div class="glass-panel p-4 overflow-x-auto">
+                    <table class="w-full table-auto text-sm">
+                        <thead class="text-accent">
+                            <tr>
+                                <th class="p-2 text-left">Model</th>
+                                <th class="p-2 text-left">Type</th>
+                                <th class="p-2 text-left">Version / Checkpoint</th>
+                                <th class="p-2 text-left">Primary Use‑Case</th>
+                                <th class="p-2 text-left">Consumed By</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-on-background">
+                            <!-- Replace the rows below with the actual models you use -->
+                            <tr class="table-row bg-glass-bg hover:bg-accent transition-colors">
+                                <td class="p-2">[Model 1]</td>
+                                <td class="p-2">[Model Type]</td>
+                                <td class="p-2">[Version]</td>
+                                <td class="p-2">[Use‑Case]</td>
+                                <td class="p-2">Inference Agent</td>
+                            </tr>
+                            <tr class="table-row bg-glass-bg hover:bg-accent transition-colors">
+                                <td class="p-2">[Model 2]</td>
+                                <td class="p-2">[Model Type]</td>
+                                <td class="p-2">[Version]</td>
+                                <td class="p-2">[Use‑Case]</td>
+                                <td class="p-2">Inference Agent</td>
+                            </tr>
+                            <!-- Add more rows as required -->
+                        </tbody>
+                    </table>
+                </div>
+                <p class="mt-2 text-sm text-on-background">
+                    <em>Update this section with the concrete model list that Chimera uses.</em>
+                </p>
+            </section>
+
+            <!-- Pipeline Flow Diagram -->
+            <section id="pipeline">
+                <h2 class="text-2xl font-headline neon-text mb-4">Pipeline Flow</h2>
+                <div class="glass-panel p-4">
+                    <div class="mermaid">
+                        graph TD
+                            subgraph "Agents"
+                                A[Data Ingestion Agent] --> B[Pre‑Processing Agent]
+                                B --> C[Inference Agent]
+                                C --> D[Post‑Processing Agent]
+                            end
+                            subgraph "Models"
+                                M1[Model 1]
+                                M2[Model 2]
+                                M3[Model 3]
+                                M4[Model 4]
+                                M1 --> C
+                                M2 --> C
+                                M3 --> C
+                                M4 --> C
+                            end
+                            D --> E[(Results Store – PostgreSQL)]
+                            style A fill:#0ff,stroke:#00ffea,stroke-width:2px
+                            style B fill:#0ff,stroke:#00ffea,stroke-width:2px
+                            style C fill:#0ff,stroke:#00ffea,stroke-width:2px
+                            style D fill:#0ff,stroke:#00ffea,stroke-width:2px
+                    </div>
+                </div>
+            </section>
+
+            <!-- System Layout (Docker Network) -->
+            <section id="workflow">
+                <h2 class="text-2xl font-headline neon-text mb-4">System Layout (Docker Network)</h2>
+                <div class="glass-panel p-4">
+                    <div class="mermaid">
+                        graph LR
+                            subgraph "Docker Network: chimera‑net"
+                                ING["chimera‑ingest"]
+                                PRE["chimera‑preprocess"]
+                                INF["chimera‑inference"]
+                                POST["chimera‑postprocess"]
+                                DB[(PostgreSQL)]
+                            end
+                            ING --> PRE
+                            PRE --> INF
+                            INF --> POST
+                            POST --> DB
+                            style ING fill:#0ff,stroke:#00ffea,stroke-width:2px
+                            style PRE fill:#0ff,stroke:#00ffea,stroke-width:2px
+                            style INF fill:#0ff,stroke:#00ffea,stroke-width:2px
+                            style POST fill:#0ff,stroke:#00ffea,stroke-width:2px
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+</body>
+</html>

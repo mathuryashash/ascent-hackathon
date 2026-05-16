@@ -1,0 +1,93 @@
+{
+  "type": "langgraph",
+  "workflow_id": "chimera-pipeline",
+  "description": "Autonomous security pipeline that receives SIEM alerts, performs reconnaissance, exploits vulnerabilities, generates patches, and verifies remediation",
+  "definition": {
+    "name": "Project Chimera Pipeline",
+    "state_model": "GraphState",
+    "persistence": "SQLite via AsyncSqliteSaver",
+    "interrupts": ["human_approval"],
+    "nodes": [
+      {
+        "name": "ingress",
+        "type": "entry",
+        "description": "Parses the incoming SIEM alert, extracts target IP, sets initial trace_id and iteration_count"
+      },
+      {
+        "name": "scout",
+        "type": "recon",
+        "llm": "llama-3.1-8b-instant",
+        "tools": ["nmap", "curl", "get_logs"],
+        "description": "Runs nmap port scan, HTTP probes, log analysis, then uses LLM to identify vulnerabilities"
+      },
+      {
+        "name": "summarizer",
+        "type": "analysis",
+        "llm": "llama-3.1-8b-instant",
+        "description": "Summarizes scout findings into concise topography report"
+      },
+      {
+        "name": "investigator",
+        "type": "exploit",
+        "llm": "llama-3.1-8b-instant",
+        "description": "Analyzes vulnerability and crafts exploit payload based on topography and failure history"
+      },
+      {
+        "name": "sandbox",
+        "type": "execution",
+        "description": "Validates and executes the exploit payload in an isolated sandbox, searches output for flag pattern"
+      },
+      {
+        "name": "evaluator",
+        "type": "router",
+        "description": "Routes based on outcome: flag captured → architect, retry available → investigator, max retries → END",
+        "routes": {
+          "investigating": "retry loop (back to investigator, max 10 iterations)",
+          "patching": "flag captured, proceed to architect",
+          "failed": "max retries exceeded"
+        }
+      },
+      {
+        "name": "architect",
+        "type": "remediation",
+        "llm": "llama-3.3-70b-versatile",
+        "description": "Generates remediation patch for internal targets or exploit walkthrough for external/HTB targets"
+      },
+      {
+        "name": "human_approval",
+        "type": "interrupt",
+        "description": "Pauses execution for human review of the proposed patch before applying"
+      },
+      {
+        "name": "verifier",
+        "type": "verification",
+        "description": "Applies the patch, restarts victim, re-runs exploit to confirm vulnerability is blocked"
+      },
+      {
+        "name": "rollback",
+        "type": "recovery",
+        "description": "Restores original source code on verification failure"
+      }
+    ],
+    "edges": [
+      "ingress → scout",
+      "scout → summarizer",
+      "summarizer → investigator",
+      "investigator → sandbox",
+      "sandbox → evaluator",
+      "evaluator → investigator (conditional: status=investigating, iter<10)",
+      "evaluator → architect (conditional: status=patching, flag captured)",
+      "evaluator → END (conditional: status=failed, iter>=10)",
+      "architect → human_approval",
+      "human_approval → verifier (conditional: human_approved=true)",
+      "human_approval → END (conditional: no approval)",
+      "verifier → END (conditional: status=resolved)",
+      "verifier → rollback (conditional: status=rollback)",
+      "rollback → END"
+    ],
+    "metrics": {
+      "prometheus": true,
+      "trace_events": "SHA-256 verifiable chain via ChimeraTracer"
+    }
+  }
+}

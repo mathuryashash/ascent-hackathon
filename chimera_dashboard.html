@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Project Chimera Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<!-- TailwindCSS via CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+<!-- Mermaid for diagrams -->
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<!-- Tailwind config: custom colour palette and typography -->
+<script id="tailwind-config">
+    tailwind.config = {
+        darkMode: 'class',
+        theme: {
+            extend: {
+                colors: {
+                    "background": "#0b1326",
+                    "on-background": "#dae2fd",
+                    "primary": "#c3f5ff",
+                    "on-primary": "#00363d",
+                    "primary-container": "#00e5ff",
+                    "on-primary-container": "#00626e",
+                    "primary-fixed": "#9cf0ff",
+                    "on-primary-fixed": "#001f24",
+                    "primary-fixed-dim": "#00daf3",
+                    "secondary": "#b7c8e1",
+                    "on-secondary": "#0b1c30",
+                    "secondary-container": "#3a4a5f",
+                    "on-secondary-container": "#a9bad3",
+                    "secondary-fixed": "#d3e4fe",
+                    "secondary-fixed-dim": "#b7c8e1",
+                    "secondary-fixed-variant": "#38485d",
+                    "tertiary": "#a8ffd2",
+                    "on-tertiary": "#003824",
+                    "tertiary-container": "#006645",
+                    "on-tertiary-container": "#006645",
+                    "tertiary-fixed": "#6ffbbe",
+                    "on-tertiary-fixed": "#002113",
+                    "tertiary-fixed-dim": "#4edea3",
+                    "tertiary-fixed-variant": "#005236",
+                    "surface": "#0b1326",
+                    "surface-container": "#171f33",
+                    "surface-container-low": "#131b2e",
+                    "surface-container-lowest": "#060e20",
+                    "surface-container-high": "#222a3d",
+                    "surface-container-highest": "#2d3449",
+                    "surface-dim": "#0b1326",
+                    "surface-bright": "#31394d",
+                    "surface-tint": "#00daf3",
+                    "on-surface": "#dae2fd",
+                    "on-surface-variant": "#bac9cc",
+                    "outline": "#849396",
+                    "outline-variant": "#3b494c",
+                    "shadow": "#000000",
+                    "scrim": "#000000",
+                    "error": "#ffb4ab",
+                    "on-error": "#690005",
+                    "error-container": "#93000a",
+                    "on-error-container": "#ffdad6"
+                },
+                borderRadius: {
+                    DEFAULT: "0.125rem",
+                    lg: "0.25rem",
+                    xl: "0.5rem",
+                    full: "0.75rem"
+                },
+                spacing: {
+                    base: "4px",
+                    gutter: "20px",
+                    xs: "4px",
+                    sm: "8px",
+                    md: "16px",
+                    lg: "24px",
+                    xl: "40px",
+                    margin_mobile: "16px",
+                    margin_desktop: "32px"
+                },
+                fontFamily: {
+                    "body-sm": ["Inter"],
+                    display: ["Geist"],
+                    "headline-lg": ["Geist"],
+                    "headline-md": ["Geist"],
+                    "body-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "headline-sm": ["Geist"],
+                    "label-caps": ["Geist"],
+                    "code-sm": ["JetBrains Mono"]
+                },
+                fontSize: {
+                    "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    display: ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "headline-sm": ["20px", {"lineHeight": "1.4", "fontWeight": "500"}],
+                    "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                    "code-sm": ["13px", {"lineHeight": "1.4", "fontWeight": "400"}]
+                }
+            }
+        }
+    };
+</script>
+<style>
+    .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .glass-panel {
+        background: rgba(23,31,51,0.4);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+    .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        border-radius: 0.125rem;
+        cursor: pointer;
+        color: var(--tw-text-on-surface-variant);
+    }
+    .nav-item.active {
+        background: rgba(255,255,255,0.08);
+        color: var(--tw-text-primary);
+        font-weight: 600;
+        border-left: 4px solid var(--tw-border-primary);
+    }
+    .nav-item:hover:not(.active) {
+        background: rgba(255,255,255,0.04);
+    }
+</style>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Initialise Mermaid (dark theme)
+        mermaid.initialize({ startOnLoad: true, theme: 'dark' });
+        const navItems = document.querySelectorAll('.nav-item');
+        const sections = document.querySelectorAll('.content-section');
+        function hideAll() {
+            sections.forEach(sec => sec.classList.add('hidden'));
+            navItems.forEach(item => item.classList.remove('active'));
+        }
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                hideAll();
+                const target = item.dataset.target;
+                const targetSection = document.getElementById(target);
+                if (targetSection) targetSection.classList.remove('hidden');
+                item.classList.add('active');
+            });
+        });
+        // Activate first tab (Overview)
+        if (navItems.length) navItems[0].click();
+    });
+</script>
+</head>
+<body class="bg-background text-on-background flex h-screen overflow-hidden font-body-md">
+    <!-- Side Navigation -->
+    <aside class="hidden md:flex flex-col h-full py-4 bg-surface-container-low/60 backdrop-blur-xl border-r border-outline-variant/20 w-64">
+        <div class="px-4 mb-6">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-primary-container rounded flex items-center justify-center">
+                    <span class="material-symbols-outlined text-on-primary-container">memory</span>
+                </div>
+                <div>
+                    <h1 class="font-display text-headline-sm font-bold text-primary">Chimera</h1>
+                    <p class="font-label-caps text-[10px] uppercase tracking-widest text-on-surface-variant">Autonomous AI Platform</p>
+                </div>
+            </div>
+        </div>
+        <nav class="flex-1 flex flex-col gap-1 px-2">
+            <div class="nav-item" data-target="overview">
+                <span class="material-symbols-outlined">dashboard</span>
+                <span class="font-label-caps">Overview</span>
+            </div>
+            <div class="nav-item" data-target="models">
+                <span class="material-symbols-outlined">model_training</span>
+                <span class="font-label-caps">Models</span>
+            </div>
+            <div class="nav-item" data-target="pipeline">
+                <span class="material-symbols-outlined">device_hub</span>
+                <span class="font-label-caps">Pipeline</span>
+            </div>
+            <div class="nav-item" data-target="workflow">
+                <span class="material-symbols-outlined">map</span>
+                <span class="font-label-caps">Workflow</span>
+            </div>
+        </nav>
+        <div class="px-4 my-4">
+            <button class="w-full bg-primary-container text-on-primary-container py-2 rounded font-bold font-label-caps hover:brightness-110 transition">
+                Deploy Agent
+            </button>
+        </div>
+        <div class="mt-auto px-2 flex flex-col gap-1">
+            <div class="nav-item">
+                <span class="material-symbols-outlined">verified_user</span>
+                <span class="font-label-caps">Security</span>
+            </div>
+            <div class="nav-item">
+                <span class="material-symbols-outlined">support_agent</span>
+                <span class="font-label-caps">Support</span>
+            </div>
+        </div>
+    </aside>
+    <div class="flex-1 flex flex-col overflow-hidden relative">
+        <!-- Top Bar -->
+        <header class="flex justify-between items-center w-full px-8 h-16 sticky top-0 z-10 bg-surface/40 backdrop-blur-md border-b border-outline-variant/30">
+            <div class="flex items-center gap-4">
+                <div class="font-display text-headline-md font-bold text-primary">Chimera Dashboard</div>
+                <div class="hidden md:flex items-center bg-surface-container-lowest/50 px-4 py-1 rounded border border-outline-variant/30 w-80">
+                    <span class="material-symbols-outlined text-on-surface-variant text-sm">search</span>
+                    <input class="bg-transparent border-none focus:ring-0 text-body-sm text-on-surface placeholder:text-outline/50 w-full ml-2" placeholder="Search..." type="text" />
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <button class="p-2 text-on-surface-variant hover:bg-surface-container-highest/50 rounded"><span class="material-symbols-outlined">notifications</span></button>
+                <button class="p-2 text-on-surface-variant hover:bg-surface-container-highest/50 rounded"><span class="material-symbols-outlined">settings</span></button>
+                <button class="p-2 text-on-surface-variant hover:bg-surface-container-highest/50 rounded"><span class="material-symbols-outlined">help_outline</span></button>
+            </div>
+        </header>
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto p-8">
+            <div class="max-w-7xl mx-auto space-y-8">
+                <!-- Overview Section -->
+                <div id="overview" class="content-section hidden">
+                    <section class="space-y-6">
+                        <h2 class="font-display text-headline-md text-primary">Project Chimera Overview</h2>
+                        <p class="text-body-md text-on-surface-variant">
+                            Project <strong>Chimera</strong> is an integrated AI orchestration platform that combines multiple autonomous agents and diverse machine‑learning models to deliver end‑to‑end data processing, inference, and result delivery pipelines. The platform is containerised, highly modular and designed for rapid experimentation across LLMs, NLP classifiers, vision models, and generative AI.
+                        </p>
+                    </section>
+                    <!-- Agents Table -->
+                    <section class="mt-6">
+                        <h3 class="font-headline-sm text-primary mb-2">Agents</h3>
+                        <div class="glass-panel p-4 overflow-x-auto">
+                            <table class="w-full table-auto text-sm">
+                                <thead>
+                                    <tr class="text-on-surface-variant">
+                                        <th class="p-2 text-left">Agent Name</th>
+                                        <th class="p-2 text-left">Purpose / Function</th>
+                                        <th class="p-2 text-left">Implemented In</th>
+                                        <th class="p-2 text-left">Key Dependencies</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-on-surface">
+                                    <tr class="bg-surface-container-lowest/30">
+                                        <td class="p-2">Data Ingestion Agent</td>
+                                        <td class="p-2">Collects raw data from APIs, file systems, and streams.</td>
+                                        <td class="p-2">Python (FastAPI)</td>
+                                        <td class="p-2">requests, pydantic, aiohttp</td>
+                                    </tr>
+                                    <tr class="bg-surface-container-lowest/30">
+                                        <td class="p-2">Pre‑Processing Agent</td>
+                                        <td class="p-2">Cleanses, normalises and enriches incoming data.</td>
+                                        <td class="p-2">Python (Pandas, spaCy)</td>
+                                        <td class="p-2">pandas, spaCy, nltk</td>
+                                    </tr>
+                                    <tr class="bg-surface-container-lowest/30">
+                                        <td class="p-2">Inference Agent</td>
+                                        <td class="p-2">Routes data to appropriate ML models and aggregates predictions.</td>
+                                        <td class="p-2">Python (Torch, Transformers)</td>
+                                        <td class="p-2">torch, transformers, sentence‑transformers</td>
+                                    </tr>
+                                    <tr class="bg-surface-container-lowest/30">
+                                        <td class="p-2">Post‑Processing Agent</td>
+                                        <td class="p-2">Formats model outputs, persists results, and triggers notifications.</td>
+                                        <td class="p-2">Node.js (Express)</td>
+                                        <td class="p-2">express, pg, socket.io</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                    <!-- Docker Containers Table -->
+                    <section class="mt-6">
+                        <h3 class="font-headline-sm text-primary mb-2">Docker Containers</h3>
+                        <div class="glass-panel p-4 overflow-x-auto">
+                            <table class="w-full table-auto text-sm">
+                                <thead>
+                                    <tr class="text-on-surface-variant">
+                                        <th class="p-2 text-left">Container Name</th>
+                                        <th class="p-2 text-left">Image</th>
+                                        <th class="p-2 text-left">Exposed Port(s)</th>
+                                        <th class="p-2 text-left">Network</th>
+                                        <th class="p-2 text-left">Purpose</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-on-surface">
+                                    <tr class="bg-surface-container-lowest/30">
+                                        <td class="p-2">chimera-ingest</td>
+                                        <td class="p-2">myorg/chimera-ingest:latest</td>
+                                        <td class="p-2">8001</td>
+                                        <td class="p-2">chimera-net</td>
+                                        <td class="p-2">Runs Data Ingestion Agent</td>
+                                    </tr>
+                                    <tr class="bg-surface-container-lowest/30">
+                                        <td class="p-2">chimera-preprocess</td>
+                                        <td class="p-2">myorg/chimera-preprocess:latest</td>
+                                        <td class="p-2">8002</td>
+                                        <td class="p-2">chimera-net</td>
+                                        <td class="p-2">Runs Pre‑Processing Agent</td>
+                                    </tr>
+                                    <tr class="bg-surface-container-lowest/30">
+                                        <td class="p-2">chimera-inference</td>
+                                        <td class="p-2">myorg/chimera-inference:latest</td>
+                                        <td class="p-2">8003</td>
+                                        <td class="p-2">chimera-net</td>
+                                        <td class="p-2">Runs Inference Agent &amp; hosts model servers</td>
+                                    </tr>
+                                    <tr class="bg-surface-container-lowest/30">
+                                        <td class="p-2">chimera-postprocess</td>
+                                        <td class="p-2">myorg/chimera-postprocess:latest</td>
+                                        <td class="p-2">8004</td>
+                                        <td class="p-2">chimera-net</td>
+                                        <td class="p-2">Runs Post‑Processing Agent</td>
+                                    </tr>
+                                    <tr class="bg-surface-container-lowest/30">
+                                        <td class="p-2">postgres-db</td>
+                                        <td class="p-2">postgres:15-alpine</td>
+                                        <td class="p-2">5432</td>
+                                        <td class="p-2">chimera-net</td>
+                                        <td class="p-2">Persists results &amp; logs</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+                <!-- Models Section -->
+                <div id="models" class="content-section hidden">
+                    <section class="space-y-6">
+                        <h2 class="font-display text-headline-md text-primary">Models Used</h2>
+                        <div class="glass-panel p-4 overflow-x-auto">
+                            <table class="w-full table-auto text-sm">
+                                <thead>
+                                    <tr class="text-on-surface-variant">
+                                        <th class="p-2 text-left">Model</th>
+                                        <th class="p-2 text-left">Type</th>
+                                        <th class="p-2 text-left">Version / Checkpoint</th>
+                                        <th class="p-2 text-left">Primary Use‑Case</th>
+                                        <th class="p-2 text-left">Consumed By</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-on-surface">
+                                    <tr class="bg-surface-container-lowest/30">
+                                        <td class="p-2">GPT‑4 Turbo</td>
+                                        <td class="p-2">Large Language Model</td>
+                                        <td class="p-2">v4.0.3 (OpenAI)</td>
+                                        <td class="p-2">Generative text &amp; chat</td>
+                                        <td class="p-2">Inference Agent</td>
+                                    </tr>
+                                    <tr class="bg-surface-container-lowest/30">
+                                        <td class="p-2">BERT‑base‑uncased</td>
+                                        <td class="p-2">Transformer (NLP Classification)</td>
+                                        <td class="p-2">v1.0 (HuggingFace)</td>
+                                        <td class="p-2">Sentiment &amp; topic classification</td>
+                                        <td class="p-2">Inference Agent</td>
+                                    </tr>
+                                    <tr class="bg-surface-container-lowest/30">
+                                        <td class="p-2">ResNet‑50</td>
+                                        <td class="p-2">Convolutional Neural Network</td>
+                                        <td class="p-2">v2.2 (PyTorch Hub)</td>
+                                        <td class="p-2">Image feature extraction</td>
+                                        <td class="p-2">Inference Agent</td>
+                                    </tr>
+                                    <tr class="bg-surface-container-lowest/30">
+                                        <td class="p-2">Stable Diffusion 2.1</td>
+                                        <td class="p-2">Diffusion (Image Generation)</td>
+                                        <td class="p-2">v2.1 (CompVis)</td>
+                                        <td class="p-2">Generate visual assets from prompts</td>
+                                        <td class="p-2">Inference Agent</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+                <!-- Pipeline Section -->
+                <div id="pipeline" class="content-section hidden">
+                    <section class="space-y-6">
+                        <h2 class="font-display text-headline-md text-primary">Pipeline Flow</h2>
+                        <div class="glass-panel p-4">
+                            <div class="mermaid">
+                                graph TD
+                                    subgraph "Agents"
+                                        A[Data Ingestion Agent] --> B[Pre‑Processing Agent]
+                                        B --> C[Inference Agent]
+                                        C --> D[Post‑Processing Agent]
+                                    end
+                                    subgraph "Models"
+                                        M1[GPT‑4 Turbo]
+                                        M2[BERT‑base]
+                                        M3[ResNet‑50]
+                                        M4[Stable Diffusion]
+                                        M1 --> C
+                                        M2 --> C
+                                        M3 --> C
+                                        M4 --> C
+                                    end
+                                    D --> E[(Results Store – PostgreSQL)]
+                                    style A fill:#e3f2fd,stroke:#2196F3,stroke-width:2px
+                                    style B fill:#e8f5e9,stroke:#4CAF50,stroke-width:2px
+                                    style C fill:#fff3e0,stroke:#FF9800,stroke-width:2px
+                                    style D fill:#fce4ec,stroke:#E91E63,stroke-width:2px
+                            </div>
+                        </div>
+                    </section>
+                </div>
+                <!-- Workflow Section -->
+                <div id="workflow" class="content-section hidden">
+                    <section class="space-y-6">
+                        <h2 class="font-display text-headline-md text-primary">System Layout (Docker Network)</h2>
+                        <div class="glass-panel p-4">
+                            <div class="mermaid">
+                                graph LR
+                                    subgraph "Docker Network: chimera-net"
+                                        ING["chimera-ingest\n(8001)"]
+                                        PRE["chimera-preprocess\n(8002)"]
+                                        INF["chimera-inference\n(8003)"]
+                                        POST["chimera-postprocess\n(8004)"]
+                                        DB[(PostgreSQL\n5432)]
+                                    end
+                                    ING --> PRE
+                                    PRE --> INF
+                                    INF --> POST
+                                    POST --> DB
+                                    style ING fill:#e3f2fd,stroke:#2196F3,stroke-width:2px
+                                    style PRE fill:#e8f5e9,stroke:#4CAF50,stroke-width:2px
+                                    style INF fill:#fff3e0,stroke:#FF9800,stroke-width:2px
+                                    style POST fill:#fce4ec,stroke:#E91E63,stroke-width:2px
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

@@ -529,16 +529,18 @@ HOME_HTML = """
 
 def log_request(query: str, status: int) -> None:
     """Appends a structured log line to the access.log file."""
-    os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    method = request.method
-    path = request.full_path if request.query_string else request.path
-    log_line = f"[{timestamp}] {method} {path} | status={status}\\n"
     try:
+        os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        method = request.method
+        path = request.full_path if request.query_string else request.path
+
+        log_line = f"[{timestamp}] {method} {path} | status={status}\n"
         with open(LOG_PATH, "a") as f:
             f.write(log_line)
     except Exception as e:
-        app.logger.error(f"Failed to write log: {e}")
+        # Non-fatal: just print to stdout
+        print(f"ERROR in app: Failed to write log: {e}")
 
 
 # ?????????????????????????????????????????????????????????????????????????????

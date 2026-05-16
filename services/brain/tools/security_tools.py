@@ -22,7 +22,7 @@ LOG_PATH = os.environ.get("LOG_PATH", "/app/victim-logs/access.log")
 VICTIM_SRC_PATH = os.environ.get("VICTIM_SRC_PATH", "/app/victim-src/")
 SANDBOX_CONTAINER_NAME = os.environ.get("SANDBOX_CONTAINER", "chimera-sandbox")
 VICTIM_CONTAINER_NAME = os.environ.get("VICTIM_CONTAINER", "chimera-victim-1")
-VICTIM_HOST = os.environ.get("VICTIM_HOST", "http://chimera-victim:5000")
+VICTIM_HOST = os.environ.get("VICTIM_HOST", "http://chimera-victim-1:5000")
 
 SUSPICIOUS_KEYWORDS = ["UNION", "SELECT", "--", "OR 1=1", "DROP", "INSERT", "'"]
 SQL_ERROR_INDICATORS = [
@@ -195,8 +195,7 @@ def restart_victim_container(wait_timeout: int = 45) -> dict:
             health = container.attrs.get("State", {}).get("Health", {}).get("Status", "")
             if health == "healthy":
                 return {"status": "success"}
-            if health == "unhealthy":
-                return {"status": "error", "message": "Victim became unhealthy after restart"}
+            # Continue waiting even if 'unhealthy' briefly
             time.sleep(2)
         return {"status": "error", "message": "Timed out waiting for victim health"}
     except Exception as e:
