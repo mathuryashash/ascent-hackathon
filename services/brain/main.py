@@ -17,6 +17,7 @@ import hmac
 import time
 import structlog
 import asyncio
+from contextlib import asynccontextmanager
 from typing import List, Dict, Any, Optional
 from fastapi import FastAPI, Request, BackgroundTasks, Header, HTTPException, WebSocket, WebSocketDisconnect, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -33,10 +34,26 @@ from tracing import configure_logging
 configure_logging()
 log = structlog.get_logger(__name__)
 
+_shared_conn: Optional[aiosqlite.Connection] = None
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global _shared_conn
+    _shared_conn = await aiosqlite.connect("/app/checkpoints.sqlite")
+    checkpointer = AsyncSqliteSaver(_shared_conn)
+    await checkpointer.setup()
+    get_graph(checkpointer=checkpointer)
+    log.info("graph_initialized")
+    yield
+    if _shared_conn:
+        await _shared_conn.close()
+        _shared_conn = None
+
 app = FastAPI(
     title="Project Chimera Orchestrator",
     description="FastAPI wrapper around the LangGraph autonomous pipeline",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 # Allow UI (different origin) to call the API.
@@ -150,27 +167,6 @@ def _valid_hmac(body: bytes, header_val: str) -> bool:
         return False
     expected = "sha256=" + hmac.HMAC(WEBHOOK_SECRET.encode(), body, hashlib.sha256).hexdigest()
     return hmac.compare_digest(expected, header_val)
-
-# ---------------------------------------------------------------------------
-# Shared graph (built once at startup, reused across all requests)
-# ---------------------------------------------------------------------------
-_shared_conn: Optional[aiosqlite.Connection] = None
-
-@app.on_event("startup")
-async def _startup():
-    global _shared_conn
-    _shared_conn = await aiosqlite.connect("/app/checkpoints.sqlite")
-    checkpointer = AsyncSqliteSaver(_shared_conn)
-    await checkpointer.setup()
-    get_graph(checkpointer=checkpointer)
-    log.info("graph_initialized")
-
-@app.on_event("shutdown")
-async def _shutdown():
-    global _shared_conn
-    if _shared_conn:
-        await _shared_conn.close()
-        _shared_conn = None
 
 # ---------------------------------------------------------------------------
 # Admin Token Dependency
@@ -291,7 +287,7 @@ async def webhook_alert(
 DEMO_TRIGGER_ENABLED = os.getenv("DEMO_TRIGGER_ENABLED", "false").lower() == "true"
 
 @app.post("/trigger", status_code=202)
-async def trigger_demo(background_tasks: BackgroundTasks):
+async def trigger_demo(request: Request, background_tasks: BackgroundTasks):
     global _last_trigger_time
     if not DEMO_TRIGGER_ENABLED:
         raise HTTPException(status_code=403, detail="Demo trigger not enabled. Set DEMO_TRIGGER_ENABLED=true.")
@@ -299,16 +295,21 @@ async def trigger_demo(background_tasks: BackgroundTasks):
         raise HTTPException(status_code=429, detail="Rate limited — try again in a few seconds.")
     _last_trigger_time = time.time()
     import datetime
+    try:
+        body = await request.json()
+        target = body.get("target", "chimera-victim")
+    except Exception:
+        target = "chimera-victim"
     payload = {
         "alert_id": str(uuid.uuid4()),
         "timestamp": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
         "severity": "HIGH",
         "source": "ui_trigger",
-        "target": {"host": "chimera-victim", "port": 5000, "service": "flask-app"},
+        "target": target,
         "trigger": {
-            "log_line": "GET /search?q=%27+UNION+SELECT+1,value,%27x%27,0+FROM+secrets+WHERE+key=%27flag%27--",
-            "matched_pattern": "UNION SELECT",
-            "route": "/search"
+            "log_line": f"Manual trigger against {target}",
+            "matched_pattern": "MANUAL_TRIGGER",
+            "route": "/manual"
         }
     }
     trace_id = str(uuid.uuid4())
@@ -339,7 +340,7 @@ async def status(trace_id: str):
         return StatusResponse(trace_id=trace_id, status="not_found")
     except Exception as exc:
         log.warning("state_store_unavailable", trace_id=trace_id, error=str(exc))
-        return {"trace_id": trace_id, "status": "unknown", "error": "state_store_unavailable"}
+        return StatusResponse(trace_id=trace_id, status="unknown")
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -428,9 +429,9 @@ async def verify_fix(trace_id: str):
         return {"trace_id": trace_id, "error": str(e), "verdict": "UNREACHABLE"}
 
 
-@app.get("/traces")
-def list_traces():
-    return {"traces": list(_early_states.values())}
+@app.get("/runs")
+def list_runs():
+    return {"runs": list(_early_states.values())}
 
 @app.get("/metrics")
 def metrics_endpoint():
@@ -438,6 +439,14 @@ def metrics_endpoint():
     if data is None:
         return PlainTextResponse("# prometheus_client not available\n", status_code=503, media_type="text/plain; version=0.4")
     return PlainTextResponse(data, media_type="text/plain; version=0.4")
+
+@app.get("/")
+async def root():
+    return {
+        "service": "Project Chimera Orchestrator",
+        "status": "online",
+        "endpoints": ["/webhook/alert", "/status/{trace_id}", "/runs", "/metrics", "/health"]
+    }
 
 @app.get("/health")
 def health():

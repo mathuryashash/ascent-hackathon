@@ -2,13 +2,53 @@ const express = require('express');
 const path = require('path');
 const http = require('http');
 const crypto = require('crypto');
+const WebSocket = require('ws');
 
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
 const ORCHESTRATOR_URL = process.env.ORCHESTRATOR_URL || 'http://orchestrator:8000';
 const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || 'chimera-demo-secret-2026-hackathon';
 
-const runRegistry = new Map();
+// ── WebSocket Proxy ──────────────────────────────────────────────────────────
+// Proxy frontend WebSocket connections (on port 3000/3002) to the backend
+// orchestrator (on port 8000 inside Docker).
+const wss = new WebSocket.Server({ noServer: true });
+
+server.on('upgrade', (request, socket, head) => {
+  const pathname = new URL(request.url, `http://${request.headers.host}`).pathname;
+
+  if (pathname === '/ws') {
+    // Connect to the backend orchestrator
+    const backendWsUrl = ORCHESTRATOR_URL.replace(/^http/, 'ws') + '/ws';
+    const backendWs = new WebSocket(backendWsUrl);
+
+    backendWs.on('open', () => {
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        // Forward messages from frontend to backend
+        ws.on('message', (msg) => {
+          if (backendWs.readyState === WebSocket.OPEN) backendWs.send(msg);
+        });
+        // Forward messages from backend to frontend
+        backendWs.on('message', (msg) => {
+          if (ws.readyState === WebSocket.OPEN) ws.send(msg);
+        });
+        
+        ws.on('close', () => backendWs.close());
+        backendWs.on('close', () => ws.close());
+        ws.on('error', () => backendWs.close());
+        backendWs.on('error', () => ws.close());
+      });
+    });
+
+    backendWs.on('error', (err) => {
+      console.error('Backend WS connection failed:', err.message);
+      socket.destroy();
+    });
+  } else {
+    socket.destroy();
+  }
+});
 
 // ── CORS — allow the static dashboard ────────────────────────────────────────
 app.use((req, res, next) => {
@@ -62,15 +102,16 @@ app.post('/api/trigger', async (req, res) => {
     return res.status(503).json({ error: 'WEBHOOK_SECRET not configured on gateway' });
   }
 
+  const { target } = req.body;
   const alert = {
-    type: 'sqli',
-    target: 'victim-service',
+    type: 'external_recon',
+    target: target || 'chimera-victim-1',
     timestamp: new Date().toISOString(),
-    evidence: "GET /search?q=' OR '1'='1 HTTP/1.1 — triggered from Chimera Dashboard",
-    source: 'gateway-ui-demo',
+    evidence: `Manual trigger against ${target || 'internal victim'} from Chimera Dashboard`,
+    source: 'gateway-ui-manual',
     trigger: {
-      matched_pattern: 'UNION SELECT',
-      route: '/search'
+      matched_pattern: 'MANUAL_TRIGGER',
+      route: '/manual'
     }
   };
 
@@ -129,7 +170,7 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 
-app.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`Chimera Gateway UI started on port ${PORT}`);
-  console.log(`Proxying to Orchestrator at ${ORCHESTRATOR_URL}`);
+  console.log(`Proxying API and WebSockets to Orchestrator at ${ORCHESTRATOR_URL}`);
 });

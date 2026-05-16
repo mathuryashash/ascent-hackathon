@@ -39,9 +39,10 @@ tailwind.config = {
       <span class="font-label-caps text-[10px] text-error" id="ws-label">CONNECTING</span>
     </div>
     <span class="font-code-sm text-[11px] text-on-surface-variant" id="clock"></span>
-    <button onclick="triggerAttack()" id="trigger-btn" class="bg-error text-on-error font-headline-sm text-sm px-lg py-2 rounded flex items-center gap-sm hover:brightness-110 active:scale-95 transition-all">
-      <span class="material-symbols-outlined text-[18px]">bug_report</span>
-      Trigger SQLi Attack
+    <input type="text" id="target-ip" value="chimera-victim-1" placeholder="Target (e.g. 10.10.x.x)" class="bg-surface-container-highest border border-outline-variant/30 rounded px-md py-1.5 font-code-sm text-xs text-on-surface outline-none placeholder-on-surface-variant focus:border-primary/50 transition-all w-40"/>
+    <button onclick="triggerAttack()" id="trigger-btn" class="bg-error text-on-error font-headline-sm text-xs px-md py-2 rounded flex items-center gap-sm hover:brightness-110 active:scale-95 transition-all">
+      <span class="material-symbols-outlined text-[16px]">bug_report</span>
+      Trigger Attack
     </button>
   </div>
 </header>
@@ -77,6 +78,21 @@ tailwind.config = {
         <span class="font-label-caps text-label-caps">Event Stream</span>
       </a>
     </nav>
+    <div class="px-md mt-4 space-y-md">
+      <div class="glass-card p-md rounded-xl space-y-md border-primary/20">
+        <div class="font-label-caps text-label-caps text-primary flex items-center gap-xs">
+          <span class="material-symbols-outlined text-[16px]">target</span> MISSION CONTROL
+        </div>
+        <div class="space-y-sm">
+          <div class="font-label-caps text-[10px] text-on-surface-variant">TARGET IP / HOST</div>
+          <input type="text" id="target-ip" value="chimera-victim-1" placeholder="e.g. 10.10.x.x" class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded px-md py-2 font-code-sm text-xs text-on-surface outline-none placeholder-on-surface-variant focus:border-primary/50 transition-all"/>
+          <button onclick="triggerAttack()" id="trigger-btn" class="w-full bg-error text-on-error font-headline-sm text-xs px-md py-2.5 rounded flex items-center justify-center gap-sm hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-error/10">
+            <span class="material-symbols-outlined text-[18px]">bolt</span>
+            Launch Mission
+          </button>
+        </div>
+      </div>
+    </div>
     <div class="px-md mt-auto">
       <div class="glass-card p-sm rounded-xl space-y-sm">
         <div class="font-label-caps text-[10px] text-on-surface-variant">SERVICES</div>
@@ -234,7 +250,7 @@ tailwind.config = {
 
 <script>
 const API = '';
-const WS_URL = `ws://${window.location.hostname}:8000/ws`;
+const WS_URL = `ws://${window.location.host}/ws`;
 
 let ws = null;
 let runs = {};
@@ -335,17 +351,9 @@ function renderFeed() {
 // ── Runs ──
 async function fetchAllRuns() {
   try {
-    const [tracesRes, runsRes] = await Promise.allSettled([
-      fetch(`${API}/api/traces`).then(r => r.ok ? r.json() : {traces:[]}),
-      fetch(`${API}/api/runs`).then(r => r.ok ? r.json() : []),
-    ]);
+    const resp = await fetch(`${API}/api/runs`).then(r => r.ok ? r.json() : {runs:[]}).catch(() => ({runs:[]}));
     const combined = {};
-    const runList = runsRes.status === 'fulfilled' ? (runsRes.value || []) : [];
-    const traceList = tracesRes.status === 'fulfilled' ? (tracesRes.value?.traces || []) : [];
-    for (const r of runList) combined[r.trace_id] = { ...r };
-    for (const t of traceList) {
-      combined[t.trace_id] = { ...(combined[t.trace_id] || {}), ...t };
-    }
+    for (const r of (resp?.runs || [])) combined[r.trace_id] = { ...r };
     runs = combined;
     renderRuns();
     updateStats();
@@ -553,11 +561,16 @@ async function rejectPatch() {
 
 // ── Trigger ──
 async function triggerAttack() {
+  const target = document.getElementById('target-ip').value || 'chimera-victim-1';
   const btn = document.getElementById('trigger-btn');
   btn.disabled = true;
   btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">hourglass_empty</span> Triggering…';
   try {
-    const r = await fetch(`${API}/api/trigger`, {method:'POST'});
+    const r = await fetch(`${API}/api/trigger`, {
+      method:'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ target })
+    });
     const d = await r.json();
     if (r.ok && d.trace_id) {
       runs[d.trace_id] = {trace_id:d.trace_id, status:'queued', startTime:Date.now()};

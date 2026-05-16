@@ -33,6 +33,27 @@ tailwind.config = {
 .connector { width: 2px; background: linear-gradient(180deg,#3b494c,rgba(59,73,76,0.2)); margin: 0 auto; }
 .connector-active { background: linear-gradient(180deg,#00daf3,rgba(0,218,243,0.2)); }
 .connector-done { background: linear-gradient(180deg,#a8ffd2,rgba(168,255,210,0.2)); }
+
+@keyframes scanner-sweep {
+  0%   { background-position: 0 -100%; opacity: 0.6; }
+  50%  { opacity: 1; }
+  100% { background-position: 0 200%; opacity: 0.6; }
+}
+@keyframes glitch-flicker {
+  0%,89%,100% { transform: translate(0,0) skew(0deg); }
+  90%  { transform: translate(-2px,1px) skew(-0.5deg); }
+  92%  { transform: translate(2px,-1px) skew(0.5deg); }
+  94%  { transform: translate(-1px,2px) skew(-0.3deg); }
+  96%  { transform: translate(1px,-1px) skew(0.3deg); }
+}
+.node-scanning {
+  border-color: rgba(195,245,255,0.9) !important;
+  background: rgba(195,245,255,0.06) !important;
+  background-image: linear-gradient(0deg, transparent 0%, rgba(195,245,255,0.12) 50%, transparent 100%) !important;
+  background-size: 100% 200% !important;
+  box-shadow: 0 0 20px rgba(195,245,255,0.25), inset 0 0 12px rgba(195,245,255,0.05) !important;
+  animation: scanner-sweep 1.8s linear infinite, glitch-flicker 4s ease-in-out infinite;
+}
 </style>
 </head>
 <body class="bg-background text-on-background font-body-md overflow-hidden h-screen flex flex-col">
@@ -208,7 +229,8 @@ tailwind.config = {
 
 <script>
 const API = '';
-const WS_URL = `ws://${window.location.hostname}:8000/ws`;
+const WS_URL = `ws://${window.location.hostname}:8002/ws`;
+
 
 // Node definitions in pipeline order
 const NODES = [
@@ -280,13 +302,9 @@ function setWSStatus(s) {
 // ── Trace list ──
 async function fetchTraceList() {
   try {
-    const [tracesRes, runsRes] = await Promise.allSettled([
-      fetch(`${API}/api/traces`).then(r => r.json()),
-      fetch(`${API}/api/runs`).then(r => r.json()),
-    ]);
+    const resp = await fetch(`${API}/api/runs`).then(r => r.json()).catch(() => ({}));
     const combined = {};
-    if (runsRes.status==='fulfilled') for(const r of (runsRes.value||[])) combined[r.trace_id]=r;
-    if (tracesRes.status==='fulfilled') for(const t of (tracesRes.value?.traces||[])) combined[t.trace_id]={...(combined[t.trace_id]||{}),...t};
+    for (const r of (resp?.runs || [])) combined[r.trace_id] = r;
     const sel = document.getElementById('trace-select');
     const cur = sel.value;
     sel.innerHTML = '<option value="">— select run —</option>';
@@ -385,7 +403,8 @@ function renderNodes(status) {
   const container = document.getElementById('pipeline-nodes');
   const html = NODES.map((node, idx) => {
     const state = getNodeState(node.id, status);
-    const stateClass = { active:'node-active', done:'node-done', error:'node-error', waiting:'node-waiting', idle:'node-idle' }[state];
+    const isScanning = state === 'active' && node.id === 'scout';
+    const stateClass = isScanning ? 'node-scanning' : { active:'node-active', done:'node-done', error:'node-error', waiting:'node-waiting', idle:'node-idle' }[state];
     const iconColor = { active:'color:#c3f5ff', done:'color:#a8ffd2', error:'color:#ffb4ab', waiting:'color:#f4d160', idle:'color:#849396' }[state];
     const labelColor = { active:'color:#c3f5ff', done:'color:#a8ffd2', error:'color:#ffb4ab', waiting:'color:#f4d160', idle:'color:#bac9cc' }[state];
     const pulse = (state === 'active' || state === 'waiting') ? 'animate-pulse' : '';

@@ -618,8 +618,10 @@ def login():
         # INTENTIONALLY VULNERABLE: raw string interpolation
         query = f"SELECT * FROM users WHERE username = '{username}' AND password = '{password}'"
         try:
-            cur = get_db().execute(query)
+            conn = get_db()
+            cur = conn.execute(query)
             user = cur.fetchone()
+            conn.close()
         except Exception as e:
             error = f"DB error: {e}"
             user = None

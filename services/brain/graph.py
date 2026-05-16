@@ -26,12 +26,11 @@ from pathlib import Path
 from typing import Literal, Dict, Any, Optional
 
 import threading
-import time
 import structlog
 from tracing import trace_node_enter, trace_node_exit, trace_node_error
 from metrics import record_iteration
 
-from langchain_core.messages import HumanMessage, SystemMessage, AIMessage, ToolMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.graph import StateGraph, END
 
 # Local imports
@@ -42,7 +41,6 @@ from tools.security_tools import (
     run_http_probe,
     get_victim_source,
 )
-from metrics import record_run_start, record_run_end
 from schemas import (
     GraphState,
     ScoutOutput,
@@ -63,15 +61,14 @@ _VULN_METADATA = {"cwe": "CWE-89", "cvss": "9.8", "severity": "CRITICAL"}
 # Activated by DEMO_MODE=true in env OR when all API quotas are exhausted.
 _DEMO_MODE = os.getenv("DEMO_MODE", "false").lower() in ("1", "true", "yes")
 
-# Correct model names for the langchain-google-genai and groq libraries
-_GEMINI_FLASH = os.getenv("GEMINI_FLASH_MODEL", "gemini-1.5-flash-latest")
-_GEMINI_PRO   = os.getenv("GEMINI_PRO_MODEL",   "gemini-1.5-pro-latest")
-_GROQ_MODEL   = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+# Correct model names for the Groq library
+_GROQ_FAST_MODEL = "llama-3.1-8b-instant"
+_GROQ_PRO_MODEL  = "llama-3.3-70b-versatile"
 
 def _make_scout_llm():
     from langchain_groq import ChatGroq
     return ChatGroq(
-        model=_GROQ_MODEL,
+        model=_GROQ_FAST_MODEL,
         groq_api_key=os.environ["GROQ_API_KEY"],
         temperature=0,
     )
@@ -79,23 +76,15 @@ def _make_scout_llm():
 def _make_investigator_llm():
     from langchain_groq import ChatGroq
     return ChatGroq(
-        model=_GROQ_MODEL,
+        model=_GROQ_FAST_MODEL,
         groq_api_key=os.environ["GROQ_API_KEY"],
         temperature=0,
     )
 
-def _make_gemini_llm(model: str):
-    from langchain_google_genai import ChatGoogleGenerativeAI
-    return ChatGoogleGenerativeAI(
-        model=model,
-        google_api_key=os.environ["GEMINI_API_KEY"],
-        temperature=0,
-    )
-
-def _make_groq_llm():
+def _make_architect_llm():
     from langchain_groq import ChatGroq
     return ChatGroq(
-        model=_GROQ_MODEL,
+        model=_GROQ_PRO_MODEL,
         groq_api_key=os.environ["GROQ_API_KEY"],
         temperature=0,
     )
@@ -106,52 +95,42 @@ def _make_groq_llm():
 _DEMO_SCOUT = """{
   "vulnerability_type": "SQL Injection",
   "affected_endpoints": ["/search", "/login", "/api/users"],
-  "topography_summary": "The victim app exposes a Flask REST API on port 5000. Log analysis reveals unparameterized SQL queries in the /search route via the 'q' parameter. Attacker-controlled input is concatenated directly into SELECT statements, enabling UNION-based and error-based SQL injection. The backend uses SQLite with a 'secrets' table containing the CHIMERA flag.",
-  "recommended_approach": "Use a UNION-based SQL injection payload on /search?q= to retrieve the contents of the secrets table. Try: ' UNION SELECT flag,2,3 FROM secrets-- to extract the flag value."
+  "topography_summary": "The victim app exposes a Flask REST API on port 5000. Log analysis reveals unparameterized SQL queries in the /search route via the 'q' parameter.",
+  "recommended_approach": "Use a UNION-based SQL injection payload on /search?q= to retrieve the contents of the secrets table."
 }"""
 
 _DEMO_INVESTIGATOR = """{
-  "hypothesis": "The /search endpoint concatenates user input directly into a SQL query: SELECT * FROM products WHERE name LIKE '%{q}%'. A UNION injection can pivot to the secrets table.",
+  "hypothesis": "The /search endpoint concatenates user input directly into a SQL query. A UNION injection can pivot to the secrets table.",
   "exploit_payload": "curl -s 'http://chimera-victim-1:5000/search?q=%27+UNION+SELECT+flag%2C2%2C3+FROM+secrets--'",
-  "reasoning_steps": [
-    "Scout identified /search?q= as vulnerable to SQL injection",
-    "Backend uses SQLite — UNION SELECT syntax is valid",
-    "The secrets table likely has a 'flag' column based on schema hints",
-    "URL-encode the single quote and comment sequence for curl compatibility"
-  ],
-  "confidence_score": 0.92
+  "reasoning_steps": ["Identify vulnerable endpoint", "Craft UNION payload", "URL-encode for curl"],
+  "confidence_score": 0.95
 }"""
 
 _DEMO_ARCHITECT = """{
-  "patched_content": "from flask import Flask, request, jsonify\\nimport sqlite3, os\\napp = Flask(__name__)\\nDB_PATH = os.getenv('DB_PATH', '/data/victim.db')\\n\\ndef get_db():\\n    conn = sqlite3.connect(DB_PATH)\\n    conn.row_factory = sqlite3.Row\\n    return conn\\n\\n@app.route('/health')\\ndef health():\\n    return jsonify({'status': 'ok'})\\n\\n@app.route('/search')\\ndef search():\\n    q = request.args.get('q', '')\\n    conn = get_db()\\n    # PATCHED: use parameterized query to prevent SQL injection\\n    rows = conn.execute('SELECT * FROM products WHERE name LIKE ?', (f'%{q}%',)).fetchall()\\n    conn.close()\\n    return jsonify([dict(r) for r in rows])\\n\\nif __name__ == '__main__':\\n    app.run(host='0.0.0.0', port=5000)\\n",
-  "files_modified": ["app.py"],
-  "explanation": "Replaced string concatenation in the SQL query with a parameterized query using the ? placeholder. This prevents any user-supplied input from being interpreted as SQL, completely mitigating the UNION-based SQL injection vulnerability.",
-  "safe_to_apply": true
+  "patched_content": "from flask import Flask, request, jsonify\\nimport sqlite3, os\\napp = Flask(__name__)\\nDB_PATH = os.getenv('DB_PATH', '/data/victim.db')\\n\\ndef get_db():\\n    conn = sqlite3.connect(DB_PATH)\\n    conn.row_factory = sqlite3.Row\\n    return conn\\n\\n@app.route('/search')\\ndef search():\\n    q = request.args.get('q', '')\\n    conn = get_db()\\n    rows = conn.execute('SELECT * FROM products WHERE name LIKE ?', (f'%{q}%',)).fetchall()\\n    conn.close()\\n    return jsonify([dict(r) for r in rows])\\n\\nif __name__ == '__main__':\\n    app.run(host='0.0.0.0', port=5000)\\n",
+  "explanation": "Replaced string concatenation in the SQL query with a parameterized query using placeholders."
 }"""
 
 class _MockResponse:
     def __init__(self, content): self.content = content
 
 async def _demo_invoke(stub: str) -> _MockResponse:
-    """Simulate a realistic LLM call delay then return the stub."""
     await asyncio.sleep(1.2)
     return _MockResponse(stub)
 
 # ---------------------------------------------------------------------------
 # Resilient LLM invoke: tries real LLMs then falls back to demo mode
 # ---------------------------------------------------------------------------
-_QUOTA_ERRORS = ("429", "quota", "rate_limit", "too many requests", "resource_exhausted",
-                 "not_found", "not found", "404")
+_QUOTA_ERRORS = ("429", "quota", "rate_limit", "too many requests", "resource_exhausted", "404", "not_found")
 
 def _is_quota_or_model_error(err: str) -> bool:
     low = err.lower()
     return any(k in low for k in _QUOTA_ERRORS)
 
-async def _invoke_with_retry(llm, messages, timeout=60.0, max_retries=2,
-                              demo_stub: str | None = None):
-    """Try the real LLM with retries; fall back to demo stub on quota/model errors."""
+async def _invoke_with_retry(llm, messages, timeout=60.0, max_retries=2, demo_stub: str | None = None):
     if _DEMO_MODE and demo_stub:
         return await _demo_invoke(demo_stub)
+    
     delay = 4
     last_err = None
     for attempt in range(max_retries):
@@ -162,35 +141,26 @@ async def _invoke_with_retry(llm, messages, timeout=60.0, max_retries=2,
             last_err = err_str
             if _is_quota_or_model_error(err_str):
                 if attempt < max_retries - 1:
-                    log.warning("llm_rate_limit_retry", attempt=attempt+1,
-                                wait_s=delay, error=err_str[:120])
+                    log.warning("llm_rate_limit_retry", attempt=attempt+1, wait_s=delay, error=err_str[:120])
                     await asyncio.sleep(delay)
                     delay *= 2
-                else:
-                    break   # fall through to demo stub below
-            else:
-                raise   # non-quota error — propagate immediately
-    # All retries exhausted or quota hit — use demo stub if available
+                else: break
+            else: raise
+    
     if demo_stub:
         log.warning("llm_quota_fallback_to_demo", error=(last_err or "")[:120])
         return await _demo_invoke(demo_stub)
-    raise RuntimeError(f"LLM call failed after {max_retries} retries: {last_err}")
+    raise RuntimeError(f"LLM call failed: {last_err}")
 
 def _load_prompt(name: str) -> str:
     prompt_dir = Path(__file__).parent / "prompts"
     file_path = prompt_dir / f"{name}_prompt.txt"
     if not file_path.exists():
-        raise FileNotFoundError(
-            f"Required prompt file not found: {file_path}. "
-            "Ensure all prompt templates are present in the prompts/ directory."
-        )
+        raise FileNotFoundError(f"Required prompt file not found: {file_path}")
     return file_path.read_text(encoding="utf-8")
 
 def _repair_json(s: str) -> str:
-    """Close any unterminated strings/objects in a truncated JSON fragment."""
-    in_string = False
-    escape_next = False
-    opens: list[str] = []
+    in_string, escape_next, opens = False, False, []
     for c in s:
         if escape_next:
             escape_next = False
@@ -205,406 +175,276 @@ def _repair_json(s: str) -> str:
                 opens.append("]" if c == "[" else "}")
             elif c in ("}", "]") and opens:
                 opens.pop()
-    result = s
-    if in_string:
-        result += '"'
+    res = s + ('"' if in_string else "")
     while opens:
-        result += opens.pop()
-    return result
-
+        res += opens.pop()
+    return res
 
 def _to_snake(s: str) -> str:
     return re.sub(r'(?<!^)(?=[A-Z])', '_', s).lower()
 
 def _parse_json_response(content: str, model_cls):
-    """Parse LLM response into a Pydantic model with fuzzy key matching."""
     clean = re.sub(r"```(?:json)?\s*", "", content).strip().rstrip("`").strip()
     match = re.search(r"\{.*\}", clean, re.DOTALL)
-    if not match:
-        raise ValueError(f"No JSON object found in response: {content[:200]}")
+    if not match: raise ValueError(f"No JSON object found: {content[:200]}")
     json_str = match.group(0)
-    try:
-        data = json.loads(json_str, strict=False)
-    except json.JSONDecodeError as exc:
-        log.warning("json_parse_repair", error=str(exc), snippet=json_str[:120])
-        repaired = _repair_json(json_str)
-        data = json.loads(repaired, strict=False)
+    try: data = json.loads(json_str, strict=False)
+    except json.JSONDecodeError: data = json.loads(_repair_json(json_str), strict=False)
 
-    # --- Fuzzy Key Normalization (camelCase -> snake_case) ---
     def normalize_keys(obj):
-        if isinstance(obj, dict):
-            return {_to_snake(k): normalize_keys(v) for k, v in obj.items()}
-        if isinstance(obj, list):
-            return [normalize_keys(v) for v in obj]
+        if isinstance(obj, dict): return {_to_snake(k): normalize_keys(v) for k, v in obj.items()}
+        if isinstance(obj, list): return [normalize_keys(v) for v in obj]
         return obj
 
     data = normalize_keys(data)
-
-    # --- Try top-level first ---
-    try:
-        return model_cls.model_validate(data)
-    except Exception as top_err:
-        pass
-
-    # --- Fallback: search nested dicts (BFS) ---
-    from collections import deque
-    queue = deque()
-    if isinstance(data, dict):
-        queue.extend(v for v in data.values() if isinstance(v, dict))
-    while queue:
-        candidate = queue.popleft()
-        try:
-            return model_cls.model_validate(candidate)
-        except Exception:
-            queue.extend(v for v in candidate.values() if isinstance(v, dict))
-
-    # Nothing worked — raise the original top-level error with context
-    raise ValueError(
-        f"Could not parse {model_cls.__name__} from LLM response. "
-        f"Raw snippet: {json_str[:300]}"
-    )
+    try: return model_cls.model_validate(data)
+    except Exception:
+        from collections import deque
+        q = deque([v for v in data.values() if isinstance(v, dict)]) if isinstance(data, dict) else deque()
+        while q:
+            cand = q.popleft()
+            try: return model_cls.model_validate(cand)
+            except Exception: q.extend(v for v in cand.values() if isinstance(v, dict))
+    raise ValueError(f"Could not parse {model_cls.__name__} from LLM response.")
 
 def _truncate(text: str, max_chars: int = 2000) -> str:
-    if len(text) > max_chars:
-        return text[:max_chars] + "\n...[TRUNCATED]"
-    return text
+    return text[:max_chars] + "\n...[TRUNCATED]" if len(text) > max_chars else text
 
-# Allowlist: only curl commands targeting the configured victim host
+# Allowlist of security tools the investigator may use in exploit payloads.
+# Shell meta-characters (;&|`$<>\n) are blocked to prevent injection.
 _EXPLOIT_ALLOW_RE = re.compile(
-    r'^curl\s+(-[a-zA-Z0-9\s]+\s+)*["\']?https?://[a-zA-Z0-9._-]+(:\d+)?[^;&|`$<>\n]*$',
-    re.MULTILINE,
+    r'\A(curl|nmap|gobuster|sqlmap|hydra|ffuf|nikto|wfuzz|searchsploit|dirb|enum4linux|smbclient)[ \t][^;&|`$<>\n]*\Z',
+    re.ASCII,
+)
+
+# Flag format — override via FLAG_PATTERN env var for non-Chimera targets (e.g. HTB).
+_FLAG_PATTERN = re.compile(
+    os.getenv("FLAG_PATTERN", r"(?:HTB|CHIMERA)\{[^}]+\}"),
+    re.IGNORECASE,
 )
 
 def _validate_exploit_payload(payload: str) -> bool:
-    """Return True only if payload is a curl command targeting a known victim host."""
+    # \A/\Z anchors + shell meta-char exclusion prevents multiline/injection attacks.
     return bool(_EXPLOIT_ALLOW_RE.match(payload.strip()))
 
 # ---------------------------------------------------------------------------
 # Node 1: Ingress
 # ---------------------------------------------------------------------------
-
 async def ingress_node(state: GraphState) -> GraphState:
     trace_id = state.get("trace_id") or str(uuid.uuid4())
-    log.info("ingress", trace_id=trace_id)
-    new_state = {
-        **state,
-        "trace_id": trace_id,
-        "messages": [],
-        "status": "scouting",
-        "iteration_count": 0,
-    }
-    return new_state
+    start = trace_node_enter(trace_id, "ingress", dict(state))
+    raw_target = state.get("alert_payload", {}).get("target", "chimera-victim-1")
+    target_ip = raw_target if isinstance(raw_target, str) else raw_target.get("host", "chimera-victim-1")
+    log.info("ingress", trace_id=trace_id, target_ip=target_ip)
+    result = {**state, "trace_id": trace_id, "target_ip": target_ip, "messages": [], "status": "scouting", "iteration_count": 0}
+    trace_node_exit(trace_id, "ingress", dict(result), start)
+    return result
 
 # ---------------------------------------------------------------------------
 # Node 2: Scout
 # ---------------------------------------------------------------------------
-
 def _preprocess_logs(log_data: dict) -> str:
-    """Filter and condense raw logs to minimize token usage for free-tier LLMs."""
-    if log_data.get("status") != "success":
-        return "No logs available."
-    
+    if log_data.get("status") != "success": return "No logs available."
     lines = log_data.get("log_lines", [])
-    # Filter for suspicious or error lines only
     keywords = ["union", "select", "error", "syntax", "sqlite", "500", "403"]
-    important_lines = [l for line in lines if (l := line.strip()) and any(k in l.lower() for k in keywords)]
-    
-    # Limit to top 10 most relevant lines
-    condensed = "\n".join(important_lines[:10])
-    return condensed if condensed else "No suspicious activity found in recent logs."
+    imp = [l for line in lines if (l := line.strip()) and any(k in l.lower() for k in keywords)]
+    return "\n".join(imp[:10]) if imp else "No suspicious activity found."
 
 async def scout_node(state: GraphState) -> GraphState:
+    start = trace_node_enter(state["trace_id"], "scout", dict(state))
     await asyncio.sleep(4)
-    log.info("scout_start", trace_id=state["trace_id"])
-    log.info("vulnerability_classification", **_VULN_METADATA)
+    target_ip = state.get("target_ip", "chimera-victim-1")
+    log.info("scout_start", trace_id=state["trace_id"], target_ip=target_ip)
+    try:
+        # Always run nmap for service discovery against the target.
+        nmap_result = await asyncio.to_thread(
+            execute_bash_sandboxed,
+            f"nmap -sV --open -T4 {target_ip}"
+        )
+        nmap_output = _truncate(nmap_result.get("stdout", "nmap produced no output"), 3000)
 
-    raw_logs = get_logs(tail_lines=30)
-    condensed_logs = _preprocess_logs(raw_logs)
-    
-    system_prompt = _load_prompt("scout")
-    llm = _make_scout_llm()
-    
-    messages = [
-        SystemMessage(content=system_prompt),
-        HumanMessage(content=(
-            "Analyze the alert and condensed log data. Return ONLY a valid JSON object.\n\n"
-            f"Alert: {json.dumps(state['alert_payload'])}\n"
-            f"Logs: {condensed_logs}"
-        )),
-    ]
-    
-    response = await _invoke_with_retry(llm, messages, timeout=60.0, demo_stub=_DEMO_SCOUT)
-    scout_out = _parse_json_response(response.content, ScoutOutput)
-    
-    return {
-        **state,
-        "target_topography": scout_out.topography_summary,
-        "current_hypothesis": scout_out.recommended_approach,
-        "scout_findings": scout_out.model_dump_json(),
-        "status": "summarizing",
-        "messages": state["messages"] + [{"role": "scout", "content": scout_out.topography_summary}],
-    }
+        # For the internal victim, supplement with log analysis.
+        log_context = ""
+        if "chimera-victim" in target_ip:
+            log_context = f"\nAccess Logs:\n{_preprocess_logs(get_logs(tail_lines=30))}"
+
+        recon_summary = f"Nmap scan of {target_ip}:\n{nmap_output}{log_context}"
+
+        llm = None if _DEMO_MODE else _make_scout_llm()
+        messages = [
+            SystemMessage(content=_load_prompt("scout")),
+            HumanMessage(content=f"Alert: {json.dumps(state['alert_payload'])}\nRecon:\n{recon_summary}"),
+        ]
+        resp = await _invoke_with_retry(llm, messages, demo_stub=_DEMO_SCOUT)
+        out = _parse_json_response(resp.content, ScoutOutput)
+        result = {**state, "target_topography": out.topography_summary, "current_hypothesis": out.recommended_approach,
+                "scout_findings": out.model_dump_json(), "status": "summarizing"}
+        trace_node_exit(state["trace_id"], "scout", dict(result), start)
+        return result
+    except Exception as exc:
+        trace_node_error(state["trace_id"], "scout", dict(state), exc)
+        raise
 
 # ---------------------------------------------------------------------------
 # Node 3: Summarizer
 # ---------------------------------------------------------------------------
-
 async def summarizer_node(state: GraphState) -> GraphState:
+    start = trace_node_enter(state["trace_id"], "summarizer", dict(state))
     await asyncio.sleep(4)
     log.info("summarizer_start", trace_id=state["trace_id"])
-    raw_content = state["scout_findings"]
-    prompt = _load_prompt("summarizer").format(raw_output=_truncate(raw_content, 4000))
-    
-    llm = _make_gemini_llm(_GEMINI_FLASH)
-    demo_summary = "Flask app on port 5000. The /search?q= endpoint is vulnerable to UNION-based SQL injection via unparameterized queries. Attacker can extract the secrets table containing CHIMERA flag using UNION SELECT."
-    response = await _invoke_with_retry(llm, [HumanMessage(content=prompt)], timeout=60.0, demo_stub=demo_summary)
-
-    return {
-        **state,
-        "target_topography": response.content,
-        "status": "investigating",
-    }
+    try:
+        prompt = _load_prompt("summarizer").format(raw_output=_truncate(state["scout_findings"], 4000))
+        llm = None if _DEMO_MODE else _make_scout_llm()
+        resp = await _invoke_with_retry(llm, [HumanMessage(content=prompt)], demo_stub="Vulnerable Flask app on port 5000.")
+        result = {**state, "target_topography": resp.content, "status": "investigating"}
+        trace_node_exit(state["trace_id"], "summarizer", dict(result), start)
+        return result
+    except Exception as exc:
+        trace_node_error(state["trace_id"], "summarizer", dict(state), exc)
+        raise
 
 # ---------------------------------------------------------------------------
 # Node 4: Investigator
 # ---------------------------------------------------------------------------
-
 async def investigator_node(state: GraphState) -> GraphState:
+    start = trace_node_enter(state["trace_id"], "investigator", dict(state))
     await asyncio.sleep(4)
-    trace_id = state["trace_id"]
-    log.info("investigator_start", trace_id=trace_id, iter=state["iteration_count"])
-    
-    system_prompt = _load_prompt("investigator")
-    llm = _make_investigator_llm()
-    
-    context = f"Topography: {state['target_topography']}\n"
-    if state.get("failure_reason"):
-        context += f"Last Failure: {state['failure_reason']}\n"
-        
-    messages = [
-        SystemMessage(content=system_prompt),
-        HumanMessage(content=context),
-    ]
-    
-    response = await _invoke_with_retry(llm, messages, timeout=60.0, demo_stub=_DEMO_INVESTIGATOR)
-    inv_out = _parse_json_response(response.content, InvestigatorOutput)
-    
-    return {
-        **state,
-        "exploit_proof": inv_out.exploit_payload,
-        "current_hypothesis": inv_out.hypothesis,
-        "messages": state["messages"] + [{"role": "investigator", "content": inv_out.hypothesis}],
-        "status": "sandbox_running"
-    }
+    log.info("investigator_start", trace_id=state["trace_id"], iter=state["iteration_count"])
+    try:
+        target_ip = state.get("target_ip", "chimera-victim-1")
+        context = f"Target: {target_ip}\nTopography: {state['target_topography']}\n"
+        if state.get("failure_reason"): context += f"Last Failure: {state['failure_reason']}\n"
+        llm = None if _DEMO_MODE else _make_investigator_llm()
+        messages = [
+            SystemMessage(content=_load_prompt("investigator") + "\n\nIMPORTANT: Return ONLY a valid JSON object."),
+            HumanMessage(content=context),
+        ]
+        resp = await _invoke_with_retry(llm, messages, demo_stub=_DEMO_INVESTIGATOR)
+        out = _parse_json_response(resp.content, InvestigatorOutput)
+        result = {**state, "exploit_proof": out.exploit_payload, "current_hypothesis": out.hypothesis, "status": "sandbox_running"}
+        trace_node_exit(state["trace_id"], "investigator", dict(result), start)
+        return result
+    except Exception as exc:
+        trace_node_error(state["trace_id"], "investigator", dict(state), exc)
+        raise
 
 # ---------------------------------------------------------------------------
 # Node 5: Sandbox
 # ---------------------------------------------------------------------------
-
 async def sandbox_node(state: GraphState) -> GraphState:
+    start = trace_node_enter(state["trace_id"], "sandbox", dict(state))
     payload = state["exploit_proof"]
     log.info("sandbox_start", trace_id=state["trace_id"])
-
-    # DEMO MODE: inject captured flag immediately without hitting the network
-    if _DEMO_MODE:
-        demo_flag = "CHIMERA{sql1_1nj3ct10n_d3m0_flag_captured}"
-        log.info("sandbox_demo_flag", trace_id=state["trace_id"], flag=demo_flag)
-        await asyncio.sleep(0.8)  # Realistic delay
-        return {
-            **state,
-            "captured_flag": demo_flag,
-            "failure_reason": "",
-            "status": "evaluating",
-            "iteration_count": state["iteration_count"] + 1,
-            "messages": state["messages"] + [{"role": "sandbox", "content": f"Flag captured: {demo_flag}"}],
-        }
-
     if not _validate_exploit_payload(payload):
-        log.warning("sandbox_payload_rejected", trace_id=state["trace_id"], payload=payload[:120])
-        return {
-            **state,
-            "captured_flag": "",
-            "failure_reason": "Exploit payload failed validation — must be a curl command targeting the victim host",
-            "status": "evaluating",
-            "iteration_count": state["iteration_count"] + 1,
-            "messages": state["messages"] + [{"role": "sandbox", "content": "Payload rejected by allowlist validator"}],
-        }
+        result = {**state, "captured_flag": "", "failure_reason": "Payload invalid", "status": "evaluating", "iteration_count": state["iteration_count"]+1}
+        trace_node_exit(state["trace_id"], "sandbox", dict(result), start)
+        return result
 
-    result = await asyncio.to_thread(execute_bash_sandboxed, payload)
-    output = result.get("stdout", "")
-    
-    flag_match = re.search(r"CHIMERA\{[^}]+\}", output, re.IGNORECASE)
-    captured_flag = flag_match.group(0) if flag_match else ""
-    
-    return {
-        **state,
-        "captured_flag": captured_flag,
-        "failure_reason": "Flag not found in output" if not captured_flag else "",
-        "status": "evaluating",
-        "iteration_count": state["iteration_count"] + 1,
-        "messages": state["messages"] + [{"role": "sandbox", "content": f"Exit: {result.get('exit_code')}, Flag: {'Captured' if captured_flag else 'Failed'}"}]
-    }
+    exec_result = await asyncio.to_thread(execute_bash_sandboxed, payload)
+    output = exec_result.get("stdout", "")
+    match = _FLAG_PATTERN.search(output)
+    flag = match.group(0) if match else ""
+    result = {**state, "captured_flag": flag, "failure_reason": "Flag not found" if not flag else "",
+            "status": "evaluating", "iteration_count": state["iteration_count"]+1}
+    trace_node_exit(state["trace_id"], "sandbox", dict(result), start)
+    return result
 
 # ---------------------------------------------------------------------------
-# Node 6: Evaluator
+# Routing & Termination Nodes
 # ---------------------------------------------------------------------------
-
 def evaluator_node(state: GraphState) -> GraphState:
-    if state.get("captured_flag"):
-        return {**state, "status": "patching"}
-    if state.get("iteration_count", 0) >= 10:
-        return {**state, "status": "failed"}
-    return {**state, "status": "investigating"}
-
-def route_after_evaluator(state: GraphState) -> str:
-    return state["status"]
-
-# ---------------------------------------------------------------------------
-# Node 7: Architect
-# ---------------------------------------------------------------------------
+    start = trace_node_enter(state["trace_id"], "evaluator", dict(state))
+    if state.get("captured_flag"): result = {**state, "status": "patching"}
+    elif state.get("iteration_count", 0) >= 10: result = {**state, "status": "failed"}
+    else: result = {**state, "status": "investigating"}
+    trace_node_exit(state["trace_id"], "evaluator", dict(result), start)
+    return result
 
 async def architect_node(state: GraphState) -> GraphState:
+    start = trace_node_enter(state["trace_id"], "architect", dict(state))
     await asyncio.sleep(4)
     log.info("architect_start", trace_id=state["trace_id"])
-
-    src_result = await asyncio.to_thread(get_victim_source, "app.py")
-    source_code = src_result.get("content", "")
-    system_prompt = _load_prompt("architect")
-    llm = _make_gemini_llm(_GEMINI_PRO)
-    
-    messages = [
-        SystemMessage(content=system_prompt),
-        HumanMessage(content=f"Code:\n{source_code}\n\nExploit:\n{state['exploit_proof']}"),
-    ]
-    
-    response = await _invoke_with_retry(llm, messages, timeout=60.0, demo_stub=_DEMO_ARCHITECT)
-    arch_out = _parse_json_response(response.content, ArchitectOutput)
-    
-    return {
-        **state,
-        "remediation_patch": arch_out.patched_content,
-        "original_source": source_code,
-        "status": "awaiting_approval",
-        "messages": state["messages"] + [{"role": "architect", "content": arch_out.explanation}]
-    }
-
-# ---------------------------------------------------------------------------
-# Node 8: Human Approval
-# ---------------------------------------------------------------------------
+    try:
+        src = (await asyncio.to_thread(get_victim_source, "app.py")).get("content", "")
+        messages = [SystemMessage(content=_load_prompt("architect")), HumanMessage(content=f"Code:\n{src}\nExploit:\n{state['exploit_proof']}")]
+        llm = None if _DEMO_MODE else _make_architect_llm()
+        resp = await _invoke_with_retry(llm, messages, demo_stub=_DEMO_ARCHITECT)
+        out = _parse_json_response(resp.content, ArchitectOutput)
+        result = {**state, "remediation_patch": out.patched_content, "original_source": src, "status": "awaiting_approval"}
+        trace_node_exit(state["trace_id"], "architect", dict(result), start)
+        return result
+    except Exception as exc:
+        trace_node_error(state["trace_id"], "architect", dict(state), exc)
+        raise
 
 def human_approval_node(state: GraphState) -> GraphState:
+    trace_node_enter(state["trace_id"], "human_approval", dict(state))
     return state
 
-def route_after_human_approval(state: GraphState) -> str:
-    if state.get("human_approved") is True:
-        return "verifier"
-    return END
-
-# ---------------------------------------------------------------------------
-# Node 9: Verifier
-# ---------------------------------------------------------------------------
-
 async def verifier_node(state: GraphState) -> GraphState:
+    start = trace_node_enter(state["trace_id"], "verifier", dict(state))
     log.info("verifier_start", trace_id=state["trace_id"])
+    
+    try:
+        # Apply patch
+        apply_res = await asyncio.to_thread(verify_patch, "app.py", state["remediation_patch"])
+        if apply_res.get("status") != "success":
+            result = {**state, "status": "rollback", "failure_reason": f"Apply failed: {apply_res.get('message')}"}
+            trace_node_exit(state["trace_id"], "verifier", dict(result), start)
+            return result
 
-    # Apply patch (uses writable VICTIM_DST_PATH mount)
-    apply_res = await asyncio.to_thread(verify_patch, "app.py", state["remediation_patch"])
-    if apply_res.get("status") != "success":
-        return {**state, "status": "rollback", "failure_reason": apply_res.get("message")}
+        await asyncio.sleep(3) # Wait for reload
 
-    # Wait for Flask auto-reloader to pick up the patched file before probing
-    await asyncio.sleep(3)
+        # Verification Probe
+        exec_result = await asyncio.to_thread(execute_bash_sandboxed, state["exploit_proof"])
+        
+        # CRITICAL: Treat tool errors as verification failure
+        if exec_result.get("status") == "error":
+            result = {**state, "status": "rollback", "failure_reason": f"Verification tool error: {exec_result.get('message')}"}
+            trace_node_exit(state["trace_id"], "verifier", dict(result), start)
+            return result
 
-    # Re-run the exact same exploit — check if flag is still leaking after patch
-    result = await asyncio.to_thread(execute_bash_sandboxed, state["exploit_proof"])
-    output = result.get("stdout", "")
-
-    flag_still_present = bool(re.search(r"CHIMERA\{[^}]+\}", output, re.IGNORECASE))
-    if flag_still_present:
-        return {**state, "status": "rollback", "failure_reason": "Patch did not block exploit — flag still visible in output"}
-    return {**state, "status": "resolved"}
-
-def route_after_verifier(state: GraphState) -> str:
-    return state["status"]
-
-# ---------------------------------------------------------------------------
-# Node 10: Rollback
-# ---------------------------------------------------------------------------
+        output = exec_result.get("stdout", "")
+        flag_still_present = bool(_FLAG_PATTERN.search(output))
+        
+        if flag_still_present:
+            result = {**state, "status": "rollback", "failure_reason": "Patch did not block exploit — flag still visible"}
+        else:
+            result = {**state, "status": "resolved"}
+            
+        trace_node_exit(state["trace_id"], "verifier", dict(result), start)
+        return result
+    except Exception as exc:
+        trace_node_error(state["trace_id"], "verifier", dict(state), exc)
+        raise
 
 async def rollback_node(state: GraphState) -> GraphState:
-    if state.get("original_source"):
-        await asyncio.to_thread(verify_patch, "app.py", state["original_source"])
-    return {**state, "status": "failed"}
+    start = trace_node_enter(state["trace_id"], "rollback", dict(state))
+    if state.get("original_source"): await asyncio.to_thread(verify_patch, "app.py", state["original_source"])
+    result = {**state, "status": "failed"}
+    trace_node_exit(state["trace_id"], "rollback", dict(result), start)
+    return result
 
 # ---------------------------------------------------------------------------
 # Graph Builder
 # ---------------------------------------------------------------------------
-
 def build_graph(checkpointer=None):
-    builder = StateGraph(GraphState)
-    
-    builder.add_node("ingress", ingress_node)
-    builder.add_node("scout", scout_node)
-    builder.add_node("summarizer", summarizer_node)
-    builder.add_node("investigator", investigator_node)
-    builder.add_node("sandbox", sandbox_node)
-    builder.add_node("evaluator", evaluator_node)
-    builder.add_node("architect", architect_node)
-    builder.add_node("human_approval", human_approval_node)
-    builder.add_node("verifier", verifier_node)
-    builder.add_node("rollback", rollback_node)
-    
-    builder.set_entry_point("ingress")
-    
-    builder.add_edge("ingress", "scout")
-    builder.add_edge("scout", "summarizer")
-    builder.add_edge("summarizer", "investigator")
-    builder.add_edge("investigator", "sandbox")
-    builder.add_edge("sandbox", "evaluator")
-    
-    builder.add_conditional_edges(
-        "evaluator",
-        route_after_evaluator,
-        {
-            "investigating": "investigator",
-            "patching": "architect",
-            "failed": END
-        }
-    )
-    
-    builder.add_edge("architect", "human_approval")
-    
-    builder.add_conditional_edges(
-        "human_approval",
-        route_after_human_approval,
-        {
-            "verifier": "verifier",
-            END: END
-        }
-    )
-    
-    builder.add_conditional_edges(
-        "verifier",
-        route_after_verifier,
-        {
-            "resolved": END,
-            "rollback": "rollback"
-        }
-    )
-    
-    builder.add_edge("rollback", END)
-    
-    return builder.compile(checkpointer=checkpointer, interrupt_before=["human_approval"])
+    b = StateGraph(GraphState)
+    for n in ["ingress","scout","summarizer","investigator","sandbox"]: b.add_node(n, globals()[f"{n}_node"])
+    b.add_node("evaluator", evaluator_node); b.add_node("architect", architect_node); b.add_node("human_approval", human_approval_node)
+    b.add_node("verifier", verifier_node); b.add_node("rollback", rollback_node)
+    b.set_entry_point("ingress")
+    b.add_edge("ingress", "scout"); b.add_edge("scout", "summarizer"); b.add_edge("summarizer", "investigator"); b.add_edge("investigator", "sandbox"); b.add_edge("sandbox", "evaluator")
+    b.add_conditional_edges("evaluator", lambda x: x["status"], {"investigating": "investigator", "patching": "architect", "failed": END})
+    b.add_edge("architect", "human_approval")
+    b.add_conditional_edges("human_approval", lambda x: "verifier" if x.get("human_approved") else END, {"verifier": "verifier", END: END})
+    b.add_conditional_edges("verifier", lambda x: x["status"], {"resolved": END, "rollback": "rollback"})
+    b.add_edge("rollback", END)
+    return b.compile(checkpointer=checkpointer, interrupt_before=["human_approval"])
 
-_graph = None
-_graph_checkpointer = None
-_graph_lock = threading.Lock()
-
+_graph, _lock = None, threading.Lock()
 def get_graph(checkpointer=None):
-    """Return the compiled graph. Rebuilds when first called or when checkpointer changes."""
-    global _graph, _graph_checkpointer
-    with _graph_lock:
-        if _graph is None or (checkpointer is not None and checkpointer is not _graph_checkpointer):
-            _graph = build_graph(checkpointer)
-            _graph_checkpointer = checkpointer
+    global _graph; 
+    with _lock:
+        if _graph is None: _graph = build_graph(checkpointer)
     return _graph

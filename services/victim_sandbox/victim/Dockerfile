@@ -13,10 +13,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app.py schema.sql entrypoint.sh ./
 RUN chmod +x entrypoint.sh
 
-RUN mkdir -p /data && chown appuser:appuser /data
+RUN mkdir -p /data /app/logs && chown -R appuser:appuser /data /app/logs
+RUN mkdir -p /home/appuser && chown appuser:appuser /home/appuser
 
 USER appuser
 
 EXPOSE 5000
 
-ENTRYPOINT ["./entrypoint.sh"]
+ENTRYPOINT ["sh", "./entrypoint.sh"]

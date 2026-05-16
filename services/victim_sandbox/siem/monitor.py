@@ -11,6 +11,7 @@ import os
 import re
 import sys
 import time
+import urllib.parse
 from datetime import datetime, timezone
 
 import docker
@@ -66,7 +67,7 @@ def fire_webhook(alert_type: str, evidence: str, target: str = "victim-service")
         resp = requests.post(
             WEBHOOK_URL,
             data=body,
-            headers={"Content-Type": "application/json", "X-Webhook-Signature": sig},
+            headers={"Content-Type": "application/json", "X-Webhook-Signature": f"sha256={sig}"},
             timeout=10,
         )
         log.info("Webhook fired → HTTP %s", resp.status_code)
@@ -75,8 +76,10 @@ def fire_webhook(alert_type: str, evidence: str, target: str = "victim-service")
 
 
 def classify_line(line: str) -> str | None:
+    # URL-decode to catch patterns like %20UNION%20SELECT
+    decoded_line = urllib.parse.unquote(line)
     for pat in SQLI_PATTERNS:
-        if pat.search(line):
+        if pat.search(decoded_line):
             return "sqli"
     return None
 

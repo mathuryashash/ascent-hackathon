@@ -254,9 +254,9 @@ function toggleRaw() {
 
 async function loadMetrics() {
   try {
-    const [metricsText, tracesRes] = await Promise.allSettled([
+    const [metricsText, runsRes] = await Promise.allSettled([
       fetch(`${API}/api/metrics`).then(r => r.text()),
-      fetch(`${API}/api/traces`).then(r => r.json()),
+      fetch(`${API}/api/runs`).then(r => r.json()),
     ]);
 
     if (metricsText.status === 'fulfilled') {
@@ -265,9 +265,9 @@ async function loadMetrics() {
       applyMetrics(m, metricsText.value);
     }
 
-    // Augment from traces for run counts if metrics not available
-    if (tracesRes.status === 'fulfilled') {
-      augmentFromTraces(tracesRes.value?.traces || []);
+    // Augment from runs for run counts if metrics not available
+    if (runsRes.status === 'fulfilled') {
+      augmentFromTraces(runsRes.value?.runs || []);
     }
 
     document.getElementById('last-updated').textContent = new Date().toLocaleTimeString('en-US', {hour12:false});

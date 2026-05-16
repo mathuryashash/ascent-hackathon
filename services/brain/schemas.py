@@ -57,17 +57,20 @@ class InvestigatorOutput(BaseModel):
 
 
 class ArchitectOutput(BaseModel):
-    """Output from the Architect node (Gemini 1.5 Pro)."""
+    """Output from the Architect node (Groq Llama 3 70B)."""
     patched_content: str = Field(
         description="Complete patched file content (full file, not a diff) to fix the vulnerability"
     )
     files_modified: list[str] = Field(
+        default_factory=list,
         description="List of file paths modified by the diff"
     )
     explanation: str = Field(
+        default="",
         description="Plain English explanation of what the patch does and why it fixes the issue"
     )
     safe_to_apply: bool = Field(
+        default=True,
         description="Whether the patch is safe to apply without breaking existing functionality"
     )
 
@@ -93,6 +96,7 @@ class GraphState(_GraphStateRequired, total=False):
     Required fields are in _GraphStateRequired; all fields below are optional
     (absent until the node that sets them has run).
     """
+    target_ip: str                   # Resolved target IP/hostname (from alert_payload.target)
     target_topography: str          # Attack surface summary from Scout
     current_hypothesis: str         # Active exploit hypothesis from Investigator
     scout_findings: str             # Full JSON dump of Scout results

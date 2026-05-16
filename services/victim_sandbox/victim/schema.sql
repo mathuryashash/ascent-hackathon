@@ -6,6 +6,20 @@ CREATE TABLE IF NOT EXISTS users (
     role     TEXT    DEFAULT 'user'
 );
 
+CREATE TABLE IF NOT EXISTS products (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    name        TEXT NOT NULL,
+    description TEXT,
+    price       DECIMAL(10,2)
+);
+
+INSERT OR IGNORE INTO products (name, description, price) VALUES
+    ('Chimera Laptop', 'High-performance laptop for security pros.', 1299.99),
+    ('Encrypted Drive', '2TB SSD with hardware encryption.', 199.50),
+    ('Network Tap', 'Gigabit passive network tap.', 45.00),
+    ('Omium SDK', 'Verifiable tracing SDK for autonomous systems.', 0.00),
+    ('Groq Card', 'Language Processing Unit for sub-second inference.', 2500.00);
+
 CREATE TABLE IF NOT EXISTS secrets (
     id    INTEGER PRIMARY KEY AUTOINCREMENT,
     key   TEXT NOT NULL,

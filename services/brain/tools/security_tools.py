@@ -6,11 +6,10 @@ These are the exact functions the LangGraph agents will call via TOOL_REGISTRY.
 
 import os
 import shutil
+import subprocess  # noqa: F401 — imported for unittest.mock.patch testability
 import datetime
 import urllib.parse
 import pathlib
-import subprocess
-import tempfile
 from typing import Optional
 
 import docker
@@ -56,7 +55,13 @@ def get_logs(tail_lines: int = 50) -> dict:
             "suspicious_entries": suspicious
         }
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return {
+            "status": "error", 
+            "message": str(e),
+            "stdout": "",
+            "stderr": str(e),
+            "exit_code": -1
+        }
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Tool 2: execute_bash_in_sandbox
@@ -81,17 +86,18 @@ def execute_bash_in_sandbox(command: str, timeout_seconds: int = 30) -> dict:
             "exit_code": exit_code
         }
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": str(e), "exit_code": -1}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Tool 3: run_http_probe
 # ─────────────────────────────────────────────────────────────────────────────
 
-def run_http_probe(path: str, params: Optional[dict] = None, method: str = "GET") -> dict:
+def run_http_probe(path: str, params: Optional[dict] = None, method: str = "GET", host_override: Optional[str] = None) -> dict:
     """Makes an HTTP request to the Victim App from inside the Sandbox."""
     try:
         encoded_params = urllib.parse.urlencode(params or {})
-        url = f"{VICTIM_HOST}{path}"
+        base = host_override or VICTIM_HOST
+        url = f"{base}{path}"
         if encoded_params: url = f"{url}?{encoded_params}"
 
         curl_cmd = f'curl -s --globoff -o - -w "\\n%{{http_code}}" --max-time 10 "{url}"'
@@ -114,36 +120,42 @@ def run_http_probe(path: str, params: Optional[dict] = None, method: str = "GET"
             "contains_sql_error": contains_sql_error
         }
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return {
+            "status": "error", 
+            "message": str(e),
+            "stdout": "",
+            "stderr": str(e),
+            "exit_code": -1
+        }
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Tool 4: verify_patch (Supports Unified Diffs)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def verify_patch(file_path: str, diff: str) -> dict:
-    """Applies a unified diff to a file and verifies it patches cleanly."""
+def verify_patch(file_path: str, new_content: str) -> dict:
+    """Writes full file content to the victim source file (overwrites in place).
+
+    The Architect node produces complete patched file content — not a unified
+    diff — so we write it directly rather than going through git apply, which
+    would require the directory to be a git repository.
+    """
     full_path = os.path.join(VICTIM_SRC_PATH, file_path)
     if not os.path.isfile(full_path):
         return {"status": "error", "message": f"File not found: {full_path}"}
 
-    patch_fd, patch_path = tempfile.mkstemp(suffix=".patch")
+    backup_path = full_path + ".bak"
     try:
-        with os.fdopen(patch_fd, "w") as f:
-            f.write(diff)
-
-        # Apply patch using git apply
-        apply = subprocess.run(
-            ["git", "apply", patch_path],
-            capture_output=True, text=True, timeout=30, cwd=VICTIM_SRC_PATH
-        )
-        if apply.returncode == 0:
-            return {"status": "success", "output": apply.stdout}
-        else:
-            return {"status": "error", "message": apply.stderr.strip() or "Patch application failed"}
+        shutil.copy2(full_path, backup_path)
+        with open(full_path, "w", encoding="utf-8") as f:
+            f.write(new_content)
+        return {"status": "success", "output": f"Wrote {len(new_content)} bytes to {full_path}"}
     except Exception as e:
+        if os.path.exists(backup_path):
+            shutil.copy2(backup_path, full_path)
         return {"status": "error", "message": str(e)}
     finally:
-        if os.path.exists(patch_path): os.unlink(patch_path)
+        if os.path.exists(backup_path):
+            os.unlink(backup_path)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Tool 5: get_victim_source
@@ -161,12 +173,49 @@ def get_victim_source(filename: str = "app.py") -> dict:
         
         return {"status": "success", "content": content}
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return {
+            "status": "error", 
+            "message": str(e),
+            "stdout": "",
+            "stderr": str(e),
+            "exit_code": -1
+        }
+
+def search_vulnerabilities(query: str) -> dict:
+    """Researches a vulnerability or CWE online to find exploitation techniques."""
+    try:
+        # In a production environment, this would call Firecrawl or Tavily.
+        # For the hackathon, we'll provide a high-quality knowledge retrieval stub
+        # that mimics a successful web search result.
+        knowledge_base = {
+            "sql injection": "Technique: UNION SELECT to extract schema. Steps: 1. Find column count. 2. Locate sensitive tables (users, secrets). 3. Extract data.",
+            "rce": "Technique: Command injection via shell meta-characters. Steps: 1. Test for blind injection. 2. Attempt reverse shell.",
+            "cwe-89": "CWE-89: Improper Neutralization of Special Elements used in an SQL Command. Remediation: Parameterized queries."
+        }
+
+        result = next((v for k, v in knowledge_base.items() if k in query.lower()), 
+                      "General security best practices: Check for input sanitization and use least privilege.")
+
+        return {
+            "status": "success",
+            "query": query,
+            "results": [{"title": f"Research for {query}", "content": result}]
+        }
+    except Exception as e:
+        return {
+            "status": "error", 
+            "message": str(e),
+            "stdout": "",
+            "stderr": str(e),
+            "exit_code": -1
+        }
 
 TOOL_REGISTRY = {
     "get_logs": get_logs,
-    "execute_bash_in_sandbox": execute_bash_in_sandbox,
+    "execute_bash_sandboxed": execute_bash_in_sandbox,
     "run_http_probe": run_http_probe,
     "verify_patch": verify_patch,
     "get_victim_source": get_victim_source,
+    "search_vulnerabilities": search_vulnerabilities,
 }
+

@@ -19,10 +19,18 @@ env/
 *.db
 *.sqlite
 *.sqlite3
+*.sqlite-shm
+*.sqlite-wal
 
 # ─── Log Files ────────────────────────────────────────────────────────────────
 logs/*.log
+*.log
 services/victim_sandbox/logs/*.log
+
+# ─── Scratch / Debug ──────────────────────────────────────────────────────────
+image.png
+read_checkpoints.py
+.planning/debug/
 
 # ─── Docker ───────────────────────────────────────────────────────────────────
 .docker/
