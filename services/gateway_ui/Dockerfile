@@ -1,6 +1,5 @@
+# Force rebuild - Cache breaker
 FROM node:20-slim
-
-RUN useradd --system --uid 1004 --no-create-home uiuser
 
 WORKDIR /app
 
