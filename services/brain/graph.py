@@ -235,8 +235,9 @@ async def ingress_node(state: GraphState) -> GraphState:
     start = trace_node_enter(trace_id, "ingress", dict(state))
     raw_target = state.get("alert_payload", {}).get("target", "chimera-victim-1")
     target_ip = raw_target if isinstance(raw_target, str) else raw_target.get("host", "chimera-victim-1")
-    log.info("ingress", trace_id=trace_id, target_ip=target_ip)
-    result = {**state, "trace_id": trace_id, "target_ip": target_ip, "messages": [], "status": "scouting", "iteration_count": 0}
+    htb_questions = state.get("alert_payload", {}).get("htb_questions", "") or ""
+    log.info("ingress", trace_id=trace_id, target_ip=target_ip, has_questions=bool(htb_questions))
+    result = {**state, "trace_id": trace_id, "target_ip": target_ip, "htb_questions": htb_questions, "messages": [], "status": "scouting", "iteration_count": 0}
     trace_node_exit(trace_id, "ingress", dict(result), start)
     return result
 
@@ -313,6 +314,7 @@ async def investigator_node(state: GraphState) -> GraphState:
     try:
         target_ip = state.get("target_ip", "chimera-victim-1")
         context = f"Target: {target_ip}\nTopography: {state['target_topography']}\n"
+        if state.get("htb_questions"): context += f"HTB Questions to answer: {state['htb_questions']}\n"
         if state.get("failure_reason"): context += f"Last Failure: {state['failure_reason']}\n"
         llm = None if _DEMO_MODE else _make_investigator_llm()
         messages = [

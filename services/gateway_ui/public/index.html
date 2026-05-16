@@ -86,6 +86,8 @@ tailwind.config = {
         <div class="space-y-sm">
           <div class="font-label-caps text-[10px] text-on-surface-variant">TARGET IP / HOST</div>
           <input type="text" id="target-ip" value="chimera-victim-1" placeholder="e.g. 10.10.x.x" class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded px-md py-2 font-code-sm text-xs text-on-surface outline-none placeholder-on-surface-variant focus:border-primary/50 transition-all"/>
+          <div class="font-label-caps text-[10px] text-on-surface-variant mt-sm">HTB QUESTIONS (optional)</div>
+          <textarea id="htb-questions" rows="4" placeholder="e.g.&#10;How many open ports?&#10;What is the HTTP title?&#10;Submit user flag." class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded px-md py-2 font-code-sm text-xs text-on-surface outline-none placeholder-on-surface-variant focus:border-primary/50 transition-all resize-none"></textarea>
           <button onclick="triggerAttack()" id="trigger-btn" class="w-full bg-error text-on-error font-headline-sm text-xs px-md py-2.5 rounded flex items-center justify-center gap-sm hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-error/10">
             <span class="material-symbols-outlined text-[18px]">bolt</span>
             Launch Mission
@@ -237,12 +239,15 @@ tailwind.config = {
         <span id="modal-exploit" class="font-code-sm text-[11px] text-on-surface-variant"></span>
       </div>
     </div>
-    <div class="p-md border-t border-outline-variant/20 flex gap-sm shrink-0">
+    <div class="p-md border-t border-outline-variant/20 flex gap-sm shrink-0 flex-wrap">
       <button onclick="approvePatch()" id="approve-btn" class="flex-1 py-2.5 bg-tertiary text-on-tertiary rounded font-headline-sm text-sm hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-sm">
         <span class="material-symbols-outlined text-[18px]">check_circle</span> Apply Patch
       </button>
       <button onclick="rejectPatch()" id="reject-btn" class="flex-1 py-2.5 bg-error/20 text-error border border-error/30 rounded font-headline-sm text-sm hover:bg-error/30 active:scale-95 transition-all flex items-center justify-center gap-sm">
         <span class="material-symbols-outlined text-[18px]">cancel</span> Reject
+      </button>
+      <button onclick="downloadReport()" id="report-btn" class="w-full py-2 bg-surface-container border border-outline-variant/30 text-on-surface-variant rounded font-label-caps text-label-caps hover:bg-surface-container-high transition-all flex items-center justify-center gap-xs">
+        <span class="material-symbols-outlined text-[14px]">download</span> Download Report (.md)
       </button>
     </div>
   </div>
@@ -301,7 +306,9 @@ function handleWSMessage(msg) {
   }
   if (['pipeline_complete', 'human_approved', 'human_rejected'].includes(msg.event)) {
     const tid = msg.data?.trace_id;
-    if (tid === pendingApprovalTrace) hideApprovalBanner();
+    const evtStatus = msg.data?.status;
+    // Don't hide the banner on pipeline_complete if the run is still awaiting approval
+    if (tid === pendingApprovalTrace && evtStatus !== 'awaiting_approval') hideApprovalBanner();
   }
 }
 
@@ -510,24 +517,40 @@ function openApproval() {
   modalTraceId = pendingApprovalTrace;
   document.getElementById('modal-trace-id').textContent = modalTraceId.slice(0,8)+'…';
   document.getElementById('approval-modal').classList.remove('hidden');
-  // Fetch full status to get patch
-  fetch(`${API}/api/status/${modalTraceId}`).then(r => r.json()).then(data => {
-    // patch may be in the WS-cached state
-    const banner = document.getElementById('approval-banner');
-    const state = banner._state || {};
-    const patch = state.remediation_patch || data.remediation_patch || '(patch not yet available — refresh in a moment)';
+  document.getElementById('modal-patch').textContent = 'Loading…';
+  // Use /state endpoint which returns the full GraphState including patch
+  fetch(`${API}/api/state/${modalTraceId}`).then(r => r.json()).then(data => {
+    const patch = data.remediation_patch || '(no patch available)';
     document.getElementById('modal-patch').textContent = patch;
-    const flag = state.captured_flag || data.captured_flag;
-    if (flag) {
-      document.getElementById('modal-flag').textContent = flag;
+    if (data.captured_flag) {
+      document.getElementById('modal-flag').textContent = data.captured_flag;
       document.getElementById('modal-flag-section').classList.remove('hidden');
     }
-    const exploit = state.exploit_proof || data.exploit_proof;
-    if (exploit) {
-      document.getElementById('modal-exploit').textContent = exploit;
+    if (data.exploit_proof) {
+      document.getElementById('modal-exploit').textContent = data.exploit_proof;
       document.getElementById('modal-exploit-section').classList.remove('hidden');
     }
-  }).catch(_=>{});
+  }).catch(e => {
+    document.getElementById('modal-patch').textContent = '(failed to load state: ' + e.message + ')';
+  });
+}
+
+async function downloadReport() {
+  const tid = modalTraceId || pendingApprovalTrace;
+  if (!tid) { alert('No active run to download report for.'); return; }
+  const btn = document.getElementById('report-btn');
+  btn.textContent = 'Generating…';
+  try {
+    const r = await fetch(`${API}/api/report/${tid}`);
+    if (!r.ok) { alert('Report generation failed'); return; }
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `chimera-report-${tid.slice(0,8)}.md`;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+  } catch(e) { alert('Download failed: ' + e.message); }
+  btn.innerHTML = '<span class="material-symbols-outlined text-[14px]">download</span> Download Report (.md)';
 }
 
 function closeModal() {
@@ -562,6 +585,7 @@ async function rejectPatch() {
 // ── Trigger ──
 async function triggerAttack() {
   const target = document.getElementById('target-ip').value || 'chimera-victim-1';
+  const htb_questions = (document.getElementById('htb-questions')?.value || '').trim();
   const btn = document.getElementById('trigger-btn');
   btn.disabled = true;
   btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">hourglass_empty</span> Triggering…';
@@ -569,7 +593,7 @@ async function triggerAttack() {
     const r = await fetch(`${API}/api/trigger`, {
       method:'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ target })
+      body: JSON.stringify({ target, htb_questions })
     });
     const d = await r.json();
     if (r.ok && d.trace_id) {

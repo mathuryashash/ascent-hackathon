@@ -97,6 +97,7 @@ class GraphState(_GraphStateRequired, total=False):
     (absent until the node that sets them has run).
     """
     target_ip: str                   # Resolved target IP/hostname (from alert_payload.target)
+    htb_questions: str               # HTB challenge questions to answer during the run
     target_topography: str          # Attack surface summary from Scout
     current_hypothesis: str         # Active exploit hypothesis from Investigator
     scout_findings: str             # Full JSON dump of Scout results
@@ -160,3 +161,4 @@ class AlertPayload(BaseModel):
     source: Optional[str] = None
     trigger: Optional[Dict[str, Any]] = None
     metadata: Optional[Dict[str, Any]] = None
+    htb_questions: Optional[str] = None

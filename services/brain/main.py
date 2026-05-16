@@ -230,10 +230,13 @@ async def _run_pipeline(alert_payload: dict, trace_id: str) -> None:
             iters = final_state.get("iteration_count", 0)
             flag = bool(final_state.get("captured_flag"))
 
-            await manager.broadcast({
-                "event": "pipeline_complete",
-                "data": {"status": status, "trace_id": trace_id},
-            })
+            # Don't broadcast pipeline_complete for interrupted runs — the UI
+            # must keep the approval banner visible until the user acts.
+            if status != "awaiting_approval":
+                await manager.broadcast({
+                    "event": "pipeline_complete",
+                    "data": {"status": status, "trace_id": trace_id},
+                })
 
         except Exception as e:
             log.error("pipeline_error", trace_id=trace_id, error=str(e))
@@ -427,6 +430,112 @@ async def verify_fix(trace_id: str):
         }
     except Exception as e:
         return {"trace_id": trace_id, "error": str(e), "verdict": "UNREACHABLE"}
+
+
+@app.get("/state/{trace_id}")
+async def full_state(trace_id: str):
+    """Returns the full GraphState for the approval modal (patch, flag, exploit)."""
+    graph = get_graph()
+    try:
+        snapshot = await graph.aget_state({"configurable": {"thread_id": trace_id}})
+        if snapshot and snapshot.values:
+            sv = snapshot.values
+            return {
+                "trace_id": trace_id,
+                "status": sv.get("status", "unknown"),
+                "target_ip": sv.get("target_ip", ""),
+                "captured_flag": sv.get("captured_flag", ""),
+                "exploit_proof": sv.get("exploit_proof", ""),
+                "remediation_patch": sv.get("remediation_patch", ""),
+                "target_topography": sv.get("target_topography", ""),
+                "htb_questions": sv.get("htb_questions", ""),
+                "failure_reason": sv.get("failure_reason", ""),
+                "iteration_count": sv.get("iteration_count", 0),
+                "human_approved": sv.get("human_approved"),
+            }
+    except Exception as exc:
+        log.warning("full_state_error", trace_id=trace_id, error=str(exc))
+    raise HTTPException(status_code=404, detail="State not found")
+
+
+@app.get("/report/{trace_id}")
+async def download_report(trace_id: str):
+    """Generates and returns a markdown report for the completed run."""
+    import datetime
+    graph = get_graph()
+    try:
+        snapshot = await graph.aget_state({"configurable": {"thread_id": trace_id}})
+        sv = snapshot.values if (snapshot and snapshot.values) else {}
+    except Exception:
+        sv = {}
+
+    target_ip      = sv.get("target_ip", "unknown")
+    flag           = sv.get("captured_flag", "")
+    exploit        = sv.get("exploit_proof", "")
+    topography     = sv.get("target_topography", "")
+    patch          = sv.get("remediation_patch", "")
+    questions      = sv.get("htb_questions", "")
+    status         = sv.get("status", "unknown")
+    iters          = sv.get("iteration_count", 0)
+    timestamp      = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
+
+    # Answer HTB questions using Groq if questions were provided
+    answers_section = ""
+    if questions and flag:
+        try:
+            from langchain_groq import ChatGroq
+            from langchain_core.messages import HumanMessage
+            llm = ChatGroq(model=os.getenv("GROQ_MODEL", "llama-3.1-8b-instant"),
+                           groq_api_key=os.environ["GROQ_API_KEY"], temperature=0)
+            q_prompt = (
+                f"You are a CTF analyst. Based on the following recon and exploit data, "
+                f"answer each HTB question precisely and concisely.\n\n"
+                f"Target: {target_ip}\nRecon:\n{topography}\nExploit used: {exploit}\n"
+                f"Flag captured: {flag}\n\nQuestions:\n{questions}\n\n"
+                f"For each question, reply with: Q: <question>\\nA: <answer>"
+            )
+            resp = await asyncio.wait_for(llm.ainvoke([HumanMessage(content=q_prompt)]), timeout=30)
+            answers_section = f"\n## HTB Questions & Answers\n\n{resp.content}\n"
+        except Exception as e:
+            answers_section = f"\n## HTB Questions & Answers\n\n> Could not auto-answer: {e}\n\n**Questions asked:**\n{questions}\n"
+    elif questions:
+        answers_section = f"\n## HTB Questions\n\n{questions}\n\n> Flag not yet captured — answers unavailable.\n"
+
+    patch_section = f"\n## Remediation Patch Applied\n\n```python\n{patch}\n```\n" if patch else ""
+    flag_section  = f"\n**Flag:** `{flag}`\n" if flag else "\n**Flag:** Not captured\n"
+
+    md = f"""# Chimera Pentest Report
+**Trace ID:** `{trace_id}`
+**Target:** `{target_ip}`
+**Status:** `{status}`
+**Iterations:** {iters}
+**Generated:** {timestamp}
+{flag_section}
+---
+
+## Recon (Scout)
+
+```
+{topography}
+```
+
+## Exploit Used (Investigator → Sandbox)
+
+```bash
+{exploit or "No exploit executed"}
+```
+{answers_section}{patch_section}
+---
+*Generated by Project Chimera — Autonomous SecOps Pipeline*
+"""
+
+    from fastapi.responses import Response
+    filename = f"chimera-report-{trace_id[:8]}.md"
+    return Response(
+        content=md,
+        media_type="text/markdown",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @app.get("/runs")

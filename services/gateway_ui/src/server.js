@@ -102,13 +102,14 @@ app.post('/api/trigger', async (req, res) => {
     return res.status(503).json({ error: 'WEBHOOK_SECRET not configured on gateway' });
   }
 
-  const { target } = req.body;
+  const { target, htb_questions } = req.body;
   const alert = {
     type: 'external_recon',
     target: target || 'chimera-victim-1',
     timestamp: new Date().toISOString(),
     evidence: `Manual trigger against ${target || 'internal victim'} from Chimera Dashboard`,
     source: 'gateway-ui-manual',
+    htb_questions: htb_questions || '',
     trigger: {
       matched_pattern: 'MANUAL_TRIGGER',
       route: '/manual'

@@ -25,7 +25,8 @@ CRITICAL: Use "exploit_payload", NOT "exploitPayload". Use "reasoning_steps", NO
 
 ## Procedure
 1. Read the Target IP and Topography from the context carefully.
-2. If a Last Failure is provided, read the command output in it and adapt — try a different column name, column count, endpoint, or technique.
+2. If HTB Questions are provided, keep them in mind — the exploit payload should help gather data to answer them (e.g. if asked "what is the HTTP title?", probe HTTP; if asked "how many ports?", use nmap).
+3. If a Last Failure is provided, read the command output in it and adapt — try a different column name, column count, endpoint, or technique.
 3. Based on the open ports and services found, select the right attack approach:
 
 ### For HTTP (port 80/443/5000/8080):
