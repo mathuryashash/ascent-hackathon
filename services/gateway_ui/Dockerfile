@@ -9,7 +9,6 @@ RUN npm install --omit=dev
 
 COPY src/ ./src/
 COPY public/ ./public/
-USER uiuser
 
 EXPOSE 3000
 

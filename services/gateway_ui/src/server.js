@@ -87,7 +87,12 @@ async function orchestratorFetch(urlPath, options = {}) {
 
 // ── API Proxy ─────────────────────────────────────────────────────────────────
 
-// Special: Health Check
+// ── Health Check (Railway requirement) ──────────────────────────────────────
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
+// Special: Orchestrator Health Check
 app.get('/api/health', async (req, res) => {
   try {
     const resp = await orchestratorFetch('/health');
