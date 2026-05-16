@@ -664,5 +664,6 @@ def health():
 
 if __name__ == "__main__":
     import uvicorn
-
-    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("ORCHESTRATOR_PORT", "8000")))
+    # Railway provides the port via the PORT environment variable
+    port = int(os.getenv("PORT", os.getenv("ORCHESTRATOR_PORT", "8000")))
+    uvicorn.run(app, host="0.0.0.0", port=port)

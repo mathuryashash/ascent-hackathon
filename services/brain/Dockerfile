@@ -15,5 +15,5 @@ COPY ascent_gupta/member_2_ai/ ./member_2_ai/
 
 EXPOSE 8000
 
-# Start FastAPI with uvicorn — single worker, no reload watcher in production
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+# Start FastAPI with uvicorn — using shell form to allow $PORT expansion
+CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1
