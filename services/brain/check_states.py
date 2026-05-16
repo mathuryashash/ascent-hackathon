@@ -1,6 +1,6 @@
 import sqlite3, json
 
-conn = sqlite3.connect('/app/checkpoints.sqlite')
+conn = sqlite3.connect('services/brain/checkpoints.sqlite')
 conn.row_factory = sqlite3.Row
 
 print("=== Scanning writes for status channel ===")
