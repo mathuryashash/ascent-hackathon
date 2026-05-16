@@ -38,6 +38,7 @@ from tools.security_tools import (
     get_logs,
     execute_bash_in_sandbox as execute_bash_sandboxed,
     verify_patch,
+    restart_victim_container,
     run_http_probe,
     get_victim_source,
 )
@@ -105,11 +106,16 @@ _DEMO_INVESTIGATOR = """{
   "reasoning_steps": ["Identify vulnerable endpoint", "Determine products table has 4 columns", "Use key/value column names from secrets table", "URL-encode for curl"],
   "confidence_score": 0.95
 }"""
-
 _DEMO_ARCHITECT = """{
   "patched_content": "from flask import Flask, request, jsonify\\nimport sqlite3, os\\napp = Flask(__name__)\\nDB_PATH = os.getenv('DB_PATH', '/data/victim.db')\\n\\ndef get_db():\\n    conn = sqlite3.connect(DB_PATH)\\n    conn.row_factory = sqlite3.Row\\n    return conn\\n\\n@app.route('/search')\\ndef search():\\n    q = request.args.get('q', '')\\n    conn = get_db()\\n    rows = conn.execute('SELECT * FROM products WHERE name LIKE ?', (f'%{q}%',)).fetchall()\\n    conn.close()\\n    return jsonify([dict(r) for r in rows])\\n\\nif __name__ == '__main__':\\n    app.run(host='0.0.0.0', port=5000)\\n",
   "explanation": "Replaced string concatenation in the SQL query with a parameterized query using placeholders."
 }"""
+
+_DEMO_HTB_REPORT = """{
+  "patched_content": "# Exploit Report: External HTB Machine\\n\\n## Vulnerability Overview\\nDetected a UNION-based SQL Injection vulnerability on the remote endpoint. The application fails to sanitize user input before concatenating it into a SELECT statement, allowing arbitrary database extraction.\\n\\n## Exploitation Steps\\n1. **Reconnaissance**: Scanned the target IP and identified a web server on port 80/5000.\\n2. **Analysis**: Determined that the search parameter was injectable via single quote and comment sequence.\\n3. **Extraction**: Used a UNION SELECT payload to pivot from the products table to the internal secrets table.\\n\\n## Evidence\\n**Payload**: `' UNION SELECT value,2,3,4 FROM secrets--`\\n**Captured Flag**: `CHIMERA{SQLi_pwns_the_victim_service_0x41}`\\n\\n## Remediation Recommendation\\nThe remote application must be updated to use parameterized queries or an ORM to prevent SQL command injection.",
+  "explanation": "Generated a comprehensive walkthrough for the external mission since patching is not possible on the remote host."
+}"""
+
 
 class _MockResponse:
     def __init__(self, content): self.content = content
@@ -257,19 +263,36 @@ async def scout_node(state: GraphState) -> GraphState:
     target_ip = state.get("target_ip", "chimera-victim-1")
     log.info("scout_start", trace_id=state["trace_id"], target_ip=target_ip)
     try:
-        # Always run nmap for service discovery against the target.
+        # Run nmap covering common web ports explicitly plus top 1000 ports.
         nmap_result = await asyncio.to_thread(
             execute_bash_sandboxed,
-            f"nmap -sV --open -T4 {target_ip}"
+            f"nmap -sV --open -T4 -p 21,22,23,25,80,110,143,443,445,3306,3389,5000,5432,6379,8000,8080,8443,8888 {target_ip}"
         )
         nmap_output = _truncate(nmap_result.get("stdout", "nmap produced no output"), 3000)
+
+        # Detect open HTTP ports from nmap output and probe them.
+        http_context = ""
+        http_ports = []
+        for port_hint in ["80", "443", "5000", "8000", "8080", "8443", "8888"]:
+            if f"{port_hint}/tcp" in nmap_output and "open" in nmap_output:
+                http_ports.append(port_hint)
+        if http_ports:
+            probe_port = http_ports[0]
+            scheme = "https" if probe_port == "443" else "http"
+            probe_url = f"{scheme}://{target_ip}:{probe_port}/" if probe_port not in ("80", "443") else f"{scheme}://{target_ip}/"
+            probe_result = await asyncio.to_thread(
+                execute_bash_sandboxed,
+                f"curl -s -m 10 -L --max-redirs 3 -o - -w '\\nHTTP_STATUS:%{{http_code}}' '{probe_url}'"
+            )
+            probe_out = _truncate(probe_result.get("stdout", ""), 1000)
+            http_context = f"\nHTTP probe {probe_url}:\n{probe_out}"
 
         # For the internal victim, supplement with log analysis.
         log_context = ""
         if "chimera-victim" in target_ip:
             log_context = f"\nAccess Logs:\n{_preprocess_logs(get_logs(tail_lines=30))}"
 
-        recon_summary = f"Nmap scan of {target_ip}:\n{nmap_output}{log_context}"
+        recon_summary = f"Nmap scan of {target_ip}:\n{nmap_output}{http_context}{log_context}"
 
         llm = None if _DEMO_MODE else _make_scout_llm()
         messages = [
@@ -347,7 +370,32 @@ async def sandbox_node(state: GraphState) -> GraphState:
     log.info("sandbox_output", trace_id=state["trace_id"], output_preview=output[:300])
     match = _FLAG_PATTERN.search(output)
     flag = match.group(0) if match else ""
-    failure_reason = f"Flag not found. Command output: {output[:500]}" if not flag else ""
+    if not flag:
+        out_lower = output.lower()
+        if "404 not found" in out_lower or "<title>404" in out_lower or "not found" in out_lower[:200]:
+            failure_reason = (
+                "HTTP 404 — the URL path does not exist on the target. "
+                "Try: (1) probe root path first with `curl -s -m 10 http://TARGET/`, "
+                "(2) discover valid paths with `gobuster dir -u http://TARGET -w /usr/share/wordlists/dirb/common.txt -q`, "
+                "(3) if nmap showed no HTTP port, switch to FTP or SSH instead of HTTP. "
+                f"Payload was: {payload[:200]}"
+            )
+        elif "connection refused" in out_lower or "curl: (7)" in out_lower or "failed to connect" in out_lower:
+            failure_reason = (
+                "Connection refused — the target is NOT listening on this port/protocol. "
+                "Check which ports nmap actually found open and target those instead. "
+                f"Payload was: {payload[:200]}"
+            )
+        elif not output.strip() or "timed out" in out_lower or "curl: (28)" in out_lower:
+            failure_reason = (
+                "No output / timeout — the target may be unreachable or the port is filtered. "
+                "Try nmap to re-confirm open ports, or try a different port. "
+                f"Payload was: {payload[:200]}"
+            )
+        else:
+            failure_reason = f"Flag not found. Command output: {output[:500]}"
+    else:
+        failure_reason = ""
     result = {**state, "captured_flag": flag, "failure_reason": failure_reason,
             "status": "evaluating", "iteration_count": state["iteration_count"]+1}
     trace_node_exit(state["trace_id"], "sandbox", dict(result), start)
@@ -368,13 +416,38 @@ async def architect_node(state: GraphState) -> GraphState:
     start = trace_node_enter(state["trace_id"], "architect", dict(state))
     await asyncio.sleep(4)
     log.info("architect_start", trace_id=state["trace_id"])
+    
+    # Robust external detection: Check for IP addresses anywhere in the target string
+    # or if target is NOT the internal 'chimera-victim'
+    target_str = str(state.get("alert_payload", {}).get("target", "chimera-victim-1"))
+    is_internal = "chimera-victim" in target_str.lower() or "localhost" in target_str.lower()
+    is_external = not is_internal
+    
     try:
-        src = (await asyncio.to_thread(get_victim_source, "app.py")).get("content", "")
-        messages = [SystemMessage(content=_load_prompt("architect")), HumanMessage(content=f"Code:\n{src}\nExploit:\n{state['exploit_proof']}")]
-        llm = None if _DEMO_MODE else _make_architect_llm()
-        resp = await _invoke_with_retry(llm, messages, demo_stub=_DEMO_ARCHITECT)
-        out = _parse_json_response(resp.content, ArchitectOutput)
-        result = {**state, "remediation_patch": out.patched_content, "original_source": src, "status": "awaiting_approval"}
+        if is_external:
+            # HTB Mode: Generate a Walkthrough/Report
+            log.info("architect_mode_external", target=target_str)
+            messages = [
+                SystemMessage(content="You are **Architect**, the defensive lead. This was an EXTERNAL mission against a remote target. You CANNOT patch the remote machine. Instead, your goal is to generate a comprehensive 'Exploit Walkthrough' in Markdown format explaining exactly how the Investigator captured the flag. Mention the target IP/host explicitly."),
+                HumanMessage(content=f"Mission Target: {target_str}\nSuccessful Exploit: {state.get('exploit_proof', 'N/A')}\nCaptured Flag: {state.get('captured_flag', 'N/A')}")
+            ]
+            llm = _make_architect_llm()
+            resp = await _invoke_with_retry(llm, messages, demo_stub=_DEMO_HTB_REPORT)
+            out = _parse_json_response(resp.content, ArchitectOutput)
+            result = {**state, "remediation_patch": out.patched_content, "status": "resolved"}
+        else:
+            # Internal Mode: Patch local code
+            log.info("architect_mode_internal", target=target_str)
+            src = (await asyncio.to_thread(get_victim_source, "app.py")).get("content", "")
+            messages = [
+                SystemMessage(content=_load_prompt("architect")), 
+                HumanMessage(content=f"Code:\n{src}\nExploit:\n{state.get('exploit_proof', 'N/A')}")
+            ]
+            llm = _make_architect_llm()
+            resp = await _invoke_with_retry(llm, messages, demo_stub=_DEMO_ARCHITECT)
+            out = _parse_json_response(resp.content, ArchitectOutput)
+            result = {**state, "remediation_patch": out.patched_content, "original_source": src, "status": "awaiting_approval"}
+            
         trace_node_exit(state["trace_id"], "architect", dict(result), start)
         return result
     except Exception as exc:
@@ -397,7 +470,12 @@ async def verifier_node(state: GraphState) -> GraphState:
             trace_node_exit(state["trace_id"], "verifier", dict(result), start)
             return result
 
-        await asyncio.sleep(3) # Wait for reload
+        # Restart victim so it picks up the patched app.py from the volume mount
+        restart_res = await asyncio.to_thread(restart_victim_container)
+        if restart_res.get("status") != "success":
+            result = {**state, "status": "rollback", "failure_reason": f"Victim restart failed: {restart_res.get('message')}"}
+            trace_node_exit(state["trace_id"], "verifier", dict(result), start)
+            return result
 
         # Verification Probe
         exec_result = await asyncio.to_thread(execute_bash_sandboxed, state["exploit_proof"])
