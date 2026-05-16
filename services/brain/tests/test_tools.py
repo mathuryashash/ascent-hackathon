@@ -6,13 +6,12 @@ import os
 import sys
 import tempfile
 import unittest
-from unittest.mock import MagicMock, patch, mock_open
+from unittest.mock import MagicMock, patch
 
 # Make sure the tools package is importable from tests/
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 # Stub out the docker module before importing security_tools
-import importlib
 import types
 
 docker_stub = types.ModuleType("docker")
@@ -22,8 +21,7 @@ sys.modules.setdefault("docker", docker_stub)
 from tools.security_tools import (  # noqa: E402
     get_logs,
     execute_bash_in_sandbox,
-    apply_patch_to_victim,
-    SUSPICIOUS_KEYWORDS,
+    verify_patch,
 )
 
 
@@ -114,14 +112,14 @@ class TestExecuteBashInSandbox(unittest.TestCase):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# apply_patch_to_victim
+# verify_patch
 # ─────────────────────────────────────────────────────────────────────────────
 
-class TestApplyPatchToVictim(unittest.TestCase):
+class TestVerifyPatch(unittest.TestCase):
 
     def test_returns_error_when_file_not_found(self):
         with patch("tools.security_tools.VICTIM_SRC_PATH", "/nonexistent/"):
-            result = apply_patch_to_victim("app.py", "some content")
+            result = verify_patch("app.py", "some content")
         self.assertEqual(result["status"], "error")
         self.assertIn("not found", result["message"])
 
@@ -132,10 +130,8 @@ class TestApplyPatchToVictim(unittest.TestCase):
             with open(app_path, "w") as f:
                 f.write("original content")
 
-            # src (read-only check) and dst (write) both point to same tmpdir
-            with patch("tools.security_tools.VICTIM_SRC_PATH", tmpdir), \
-                 patch("tools.security_tools.VICTIM_DST_PATH", tmpdir):
-                result = apply_patch_to_victim("app.py", content)
+            with patch("tools.security_tools.VICTIM_SRC_PATH", tmpdir):
+                result = verify_patch("app.py", content)
 
             self.assertEqual(result["status"], "success")
             with open(app_path) as f:
@@ -143,39 +139,18 @@ class TestApplyPatchToVictim(unittest.TestCase):
             self.assertEqual(written, content)
 
     def test_full_file_write_succeeds_without_git(self):
-        """Non-diff content must never invoke git apply."""
+        """Patched file content must never invoke git apply."""
         content = "# patched file\n"
         with tempfile.TemporaryDirectory() as tmpdir:
             app_path = os.path.join(tmpdir, "app.py")
             open(app_path, "w").close()
 
             with patch("tools.security_tools.VICTIM_SRC_PATH", tmpdir), \
-                 patch("tools.security_tools.VICTIM_DST_PATH", tmpdir), \
                  patch("tools.security_tools.subprocess.run") as mock_run:
-                result = apply_patch_to_victim("app.py", content)
+                result = verify_patch("app.py", content)
                 mock_run.assert_not_called()
 
             self.assertEqual(result["status"], "success")
-
-    def test_diff_path_calls_git_apply(self):
-        diff = "--- a/app.py\n+++ b/app.py\n@@ -1 +1 @@\n-old\n+new\n"
-        with tempfile.TemporaryDirectory() as tmpdir:
-            app_path = os.path.join(tmpdir, "app.py")
-            with open(app_path, "w") as f:
-                f.write("old\n")
-
-            check_result = MagicMock(returncode=0, stderr="")
-            apply_result = MagicMock(returncode=0, stdout="", stderr="")
-
-            with patch("tools.security_tools.VICTIM_SRC_PATH", tmpdir), \
-                 patch("tools.security_tools.subprocess.run", side_effect=[check_result, apply_result]) as mock_run:
-                result = apply_patch_to_victim("app.py", diff)
-
-            self.assertEqual(result["status"], "success")
-            self.assertEqual(mock_run.call_count, 2)
-            # First call should be --check
-            first_args = mock_run.call_args_list[0][0][0]
-            self.assertIn("--check", first_args)
 
 
 if __name__ == "__main__":
