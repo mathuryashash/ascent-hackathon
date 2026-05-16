@@ -69,19 +69,12 @@ tailwind.config = {
         <span class="material-symbols-outlined">account_tree</span>
         <span class="font-label-caps text-label-caps">Pipeline</span>
       </a>
-      <a class="flex items-center gap-md px-md py-2.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all rounded" href="observability.html">
-        <span class="material-symbols-outlined">analytics</span>
-        <span class="font-label-caps text-label-caps">Metrics</span>
-      </a>
       <a class="flex items-center gap-md px-md py-2.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all rounded" href="logs.html">
         <span class="material-symbols-outlined">terminal</span>
         <span class="font-label-caps text-label-caps">Event Stream</span>
       </a>
-      <a class="flex items-center gap-md px-md py-2.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all rounded" href="auth.html">
-        <span class="material-symbols-outlined">key</span>
-        <span class="font-label-caps text-label-caps">Auth Portal</span>
-      </a>
-    </nav>
+      </nav>
+
     <div class="px-md mt-4 space-y-md">
       <div class="glass-card p-md rounded-xl space-y-md border-primary/20">
         <div class="font-label-caps text-label-caps text-primary flex items-center gap-xs">
@@ -618,9 +611,10 @@ async function triggerAttack() {
       renderRuns();
       pushEvent({event:'trigger', data:d, _ts:Date.now()});
       // Redirect to the graphical pipeline view
+      console.log('Redirecting to pipeline view for trace:', d.trace_id);
       setTimeout(() => {
-        window.location.href = `/orchestration.html?trace=${d.trace_id}`;
-      }, 800);
+        window.location.assign(`/orchestration.html?trace=${d.trace_id}`);
+      }, 1000);
     } else {
       alert(d.error || 'Trigger failed');
     }

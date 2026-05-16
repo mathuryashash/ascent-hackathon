@@ -8,7 +8,7 @@ const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
 const ORCHESTRATOR_URL = process.env.ORCHESTRATOR_URL || 'http://orchestrator:8000';
-const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || 'chimera-demo-secret-2026-hackathon';
+const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET;
 
 // ── WebSocket Proxy ──────────────────────────────────────────────────────────
 // Proxy frontend WebSocket connections (on port 3000/3002) to the backend
@@ -64,6 +64,7 @@ app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' cdn.tailwindcss.com cdnjs.cloudflare.com fonts.googleapis.com; style-src 'self' 'unsafe-inline' fonts.googleapis.com cdn.tailwindcss.com; font-src 'self' fonts.gstatic.com; img-src 'self' data: https://lh3.googleusercontent.com; connect-src 'self' ws: http://localhost:* http://orchestrator:*;");
   next();
 });
 

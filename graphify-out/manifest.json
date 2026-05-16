@@ -1,0 +1,426 @@
+{
+  "D:\\ascent_hackathon\\read_checkpoints.py": {
+    "mtime": 1778892684.4300277,
+    "hash": "c9f768ac51d7b1236fe753232e386fba"
+  },
+  "D:\\ascent_hackathon\\siem_simulator.py": {
+    "mtime": 1778870812.8993552,
+    "hash": "03841957620913e5fc1a577d739917e7"
+  },
+  "D:\\ascent_hackathon\\start-dashboard.ps1": {
+    "mtime": 1778878278.5039413,
+    "hash": "266fd949fceeebd2e585452c31225464"
+  },
+  "D:\\ascent_hackathon\\ascent_aditya\\siem_simulator.py": {
+    "mtime": 1778869645.909599,
+    "hash": "0e73e402a2086ce3601b8a734980820c"
+  },
+  "D:\\ascent_hackathon\\ascent_aditya\\services\\brain\\main.py": {
+    "mtime": 1778869645.8958223,
+    "hash": "7884b1b485c033c46fb9116edb741466"
+  },
+  "D:\\ascent_hackathon\\ascent_aditya\\services\\brain\\tools\\security_tools.py": {
+    "mtime": 1778869645.8978765,
+    "hash": "386e926fbf0b80c0362e2dc30b4b717a"
+  },
+  "D:\\ascent_hackathon\\ascent_aditya\\services\\brain\\tools\\__init__.py": {
+    "mtime": 1778869645.897365,
+    "hash": "ab2fccad9ad9ea5b2d6dbe70764f1080"
+  },
+  "D:\\ascent_hackathon\\ascent_aditya\\services\\gateway_ui\\src\\server.js": {
+    "mtime": 1778869645.9004474,
+    "hash": "f26685e711649b82e3c78b4bf6fbdfea"
+  },
+  "D:\\ascent_hackathon\\ascent_aditya\\services\\victim_sandbox\\app.py": {
+    "mtime": 1778869645.9060726,
+    "hash": "3758689a0eb62e3cfa4dcf55bc05d3c9"
+  },
+  "D:\\ascent_hackathon\\ascent_aditya\\services\\victim_sandbox\\init_db.py": {
+    "mtime": 1778869645.9065905,
+    "hash": "c01b277a6a613f56709f1b7243254d79"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\start-dashboard.ps1": {
+    "mtime": 1778869645.9566474,
+    "hash": "266fd949fceeebd2e585452c31225464"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\member_1_systems\\tools.py": {
+    "mtime": 1778869645.922374,
+    "hash": "a9e57a059db616f7cca3432c3a76d1ad"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\member_2_ai\\graph.py": {
+    "mtime": 1778869645.9244437,
+    "hash": "84a2d13e0caae4903f873d9bc6d25eeb"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\member_2_ai\\nodes.py": {
+    "mtime": 1778869645.925465,
+    "hash": "aebd56e571a45a1922f70815e917c784"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\member_2_ai\\prompts.py": {
+    "mtime": 1778869645.9269817,
+    "hash": "3d96c1f03b57a92910dd80ae25f934e6"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\member_2_ai\\schemas.py": {
+    "mtime": 1778869645.929263,
+    "hash": "1b02899ea2cdf9b8d31dd62f34c49669"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\member_2_ai\\state.py": {
+    "mtime": 1778869645.930286,
+    "hash": "13a0841198c7beec3b8e74b307cb8f12"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\member_2_ai\\tools.py": {
+    "mtime": 1778869645.9319801,
+    "hash": "05bd0223c9a9091d921fa91766feb29f"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\member_2_ai\\__init__.py": {
+    "mtime": 1778869645.922886,
+    "hash": "df23cf42fb14e2261452a52d3c9e25b2"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\services\\brain\\main.py": {
+    "mtime": 1778869645.9380038,
+    "hash": "081e4030458c730cd3efc24689bf6c8a"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\services\\gateway_ui\\src\\server.js": {
+    "mtime": 1778869645.947821,
+    "hash": "a6c9f65bff847efe63ce7b6378181376"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\services\\victim_sandbox\\siem\\monitor.py": {
+    "mtime": 1778869645.9515893,
+    "hash": "2ca17a4f64d004bbf2a49637992db763"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\services\\victim_sandbox\\victim\\app.py": {
+    "mtime": 1778869645.9535882,
+    "hash": "36affead8161c9ed5838a33fef283198"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\services\\victim_sandbox\\victim\\schema.sql": {
+    "mtime": 1778869645.955111,
+    "hash": "35a00af15e9f255e91f6dd5456183964"
+  },
+  "D:\\ascent_hackathon\\services\\brain\\graph.py": {
+    "mtime": 1778894585.259075,
+    "hash": "f4d00f80780b5180f77f6dae0374a7c7"
+  },
+  "D:\\ascent_hackathon\\services\\brain\\main.py": {
+    "mtime": 1778894623.7091618,
+    "hash": "09164649440c36e1e1780cc9c4c9cb4b"
+  },
+  "D:\\ascent_hackathon\\services\\brain\\metrics.py": {
+    "mtime": 1778869645.962708,
+    "hash": "07fe58e249bd1ddb27ded11bd2aa870c"
+  },
+  "D:\\ascent_hackathon\\services\\brain\\schemas.py": {
+    "mtime": 1778894569.5968766,
+    "hash": "997c47d57c92fcf6d723a38f5237af28"
+  },
+  "D:\\ascent_hackathon\\services\\brain\\tracing.py": {
+    "mtime": 1778869501.9099352,
+    "hash": "1bd2b7976191fdb347abf627cf48d1dc"
+  },
+  "D:\\ascent_hackathon\\services\\brain\\tests\\test_tools.py": {
+    "mtime": 1778891806.5120003,
+    "hash": "c4ea89a3f7f82eec7000942b8dc8fb4a"
+  },
+  "D:\\ascent_hackathon\\services\\brain\\tests\\__init__.py": {
+    "mtime": 1778869501.9067757,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "D:\\ascent_hackathon\\services\\brain\\tools\\security_tools.py": {
+    "mtime": 1778892880.2480516,
+    "hash": "81e6888a51fdd2c236df5451e21759dd"
+  },
+  "D:\\ascent_hackathon\\services\\brain\\tools\\__init__.py": {
+    "mtime": 1778878278.8587134,
+    "hash": "3cf0be1c730e8d439309ec527778ec00"
+  },
+  "D:\\ascent_hackathon\\services\\gateway_ui\\src\\server.js": {
+    "mtime": 1778894631.8396518,
+    "hash": "7d1442cabca46cc038e99ad970e907d9"
+  },
+  "D:\\ascent_hackathon\\services\\victim_sandbox\\app.py": {
+    "mtime": 1778869645.9693174,
+    "hash": "9ce94da86e983ee9dec1a95d66192b77"
+  },
+  "D:\\ascent_hackathon\\services\\victim_sandbox\\init_db.py": {
+    "mtime": 1778869645.9699187,
+    "hash": "7e72c299102c7a1f8f91694bab41497d"
+  },
+  "D:\\ascent_hackathon\\services\\victim_sandbox\\siem\\monitor.py": {
+    "mtime": 1778880148.243887,
+    "hash": "93d2ab257a59ae7c19435ba5f89af84c"
+  },
+  "D:\\ascent_hackathon\\services\\victim_sandbox\\victim\\app.py": {
+    "mtime": 1778895254.2049837,
+    "hash": "51055053c588d34c212cfcf85c184b11"
+  },
+  "D:\\ascent_hackathon\\services\\victim_sandbox\\victim\\init_db.py": {
+    "mtime": 1778871052.2256868,
+    "hash": "5b28027d02f05d58b343abf28d7c74b4"
+  },
+  "D:\\ascent_hackathon\\services\\victim_sandbox\\victim\\schema.sql": {
+    "mtime": 1778882529.877856,
+    "hash": "624d0b47efdcfd2819c6679b179c3881"
+  },
+  "D:\\ascent_hackathon\\DASHBOARD_COMPLETE.md": {
+    "mtime": 1778878278.47631,
+    "hash": "d72d868ed60be6c33f0698289f52874d"
+  },
+  "D:\\ascent_hackathon\\DASHBOARD_SETUP.md": {
+    "mtime": 1778878278.4780304,
+    "hash": "07e6c06d24928ba9a97565ca4d09b94f"
+  },
+  "D:\\ascent_hackathon\\docker-compose.yml": {
+    "mtime": 1778892965.876243,
+    "hash": "8aaca62746c080ffae432e272e1c666b"
+  },
+  "D:\\ascent_hackathon\\Project_Chimera_Architecture.md": {
+    "mtime": 1778845091.8857062,
+    "hash": "4495dab02777b857aa1eaff1e502c820"
+  },
+  "D:\\ascent_hackathon\\Project_Chimera_Review.md": {
+    "mtime": 1778869501.8894117,
+    "hash": "98d738987d325ecd2190213c28911984"
+  },
+  "D:\\ascent_hackathon\\README.md": {
+    "mtime": 1778869501.8899746,
+    "hash": "36bbd3a7c91d25aad90a17119d7afb0c"
+  },
+  "D:\\ascent_hackathon\\UI_REVIEW.md": {
+    "mtime": 1778869501.8930333,
+    "hash": "0c480d0240f512c864913f7d10de0de2"
+  },
+  "D:\\ascent_hackathon\\WALKTHROUGH.md": {
+    "mtime": 1778873033.6060715,
+    "hash": "4f62c42818d9ab87e8579034d4d8ced2"
+  },
+  "D:\\ascent_hackathon\\ascent_aditya\\docker-compose.yml": {
+    "mtime": 1778869645.8933084,
+    "hash": "e91fe8f40f18ce2c3caec5aac05b355e"
+  },
+  "D:\\ascent_hackathon\\ascent_aditya\\README.md": {
+    "mtime": 1778869645.8917441,
+    "hash": "36bbd3a7c91d25aad90a17119d7afb0c"
+  },
+  "D:\\ascent_hackathon\\ascent_aditya\\services\\brain\\README.md": {
+    "mtime": 1778869645.8943055,
+    "hash": "571b12af1fcb303e9f74e2593ccc727e"
+  },
+  "D:\\ascent_hackathon\\ascent_aditya\\services\\brain\\requirements.txt": {
+    "mtime": 1778869645.8963525,
+    "hash": "e7628b1da46bd6b6932207aadb358fc9"
+  },
+  "D:\\ascent_hackathon\\ascent_aditya\\services\\gateway_ui\\README.md": {
+    "mtime": 1778869645.8988886,
+    "hash": "ad7b00058b5a7dd6bf77794044e02d6e"
+  },
+  "D:\\ascent_hackathon\\ascent_aditya\\services\\victim_sandbox\\README.md": {
+    "mtime": 1778869645.9045448,
+    "hash": "cfc28548314f6255f8b3ea907cd533fd"
+  },
+  "D:\\ascent_hackathon\\ascent_aditya\\services\\victim_sandbox\\requirements.txt": {
+    "mtime": 1778869645.9085917,
+    "hash": "e5f3e3f5d13de1131baa12489cbbe744"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\DASHBOARD_COMPLETE.md": {
+    "mtime": 1778869645.914326,
+    "hash": "d72d868ed60be6c33f0698289f52874d"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\DASHBOARD_SETUP.md": {
+    "mtime": 1778869645.9153447,
+    "hash": "07e6c06d24928ba9a97565ca4d09b94f"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\docker-compose.yml": {
+    "mtime": 1778869645.9182866,
+    "hash": "ec5e92d19847c254bd196ad0b2344bf3"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\Project_Chimera_Architecture.md": {
+    "mtime": 1778869645.9163556,
+    "hash": "4495dab02777b857aa1eaff1e502c820"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\README.md": {
+    "mtime": 1778869645.9163556,
+    "hash": "e2a0e47337e83879796055dee82cbf5d"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\member_1_systems\\requirements.txt": {
+    "mtime": 1778869645.919818,
+    "hash": "2c76bff3aaecb26f84dac0e6da1435f2"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\member_1_systems\\tasks.md": {
+    "mtime": 1778869645.9213545,
+    "hash": "341b63186a852591040c6fce2dffe305"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\member_2_ai\\requirements.txt": {
+    "mtime": 1778869645.927729,
+    "hash": "99a73deb1a808c67ffab854931f6d3c9"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\member_2_ai\\tasks.md": {
+    "mtime": 1778869645.9314687,
+    "hash": "5b0239af5958056226ca879d84de93a8"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\member_3_integration\\tasks.md": {
+    "mtime": 1778869645.9339151,
+    "hash": "10d03718c31eba80b5758a95addf65e5"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\services\\brain\\README.md": {
+    "mtime": 1778869645.9369397,
+    "hash": "571b12af1fcb303e9f74e2593ccc727e"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\services\\brain\\requirements.txt": {
+    "mtime": 1778869645.9385517,
+    "hash": "efb5a24fc7ae7f0ba9eac6820901c69e"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\services\\gateway_ui\\README.md": {
+    "mtime": 1778869645.9415727,
+    "hash": "ad7b00058b5a7dd6bf77794044e02d6e"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\services\\gateway_ui\\public\\auth.html": {
+    "mtime": 1778869645.9444022,
+    "hash": "7c36ad4b4774382603b937e82fb321be"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\services\\gateway_ui\\public\\index.html": {
+    "mtime": 1778869645.9444022,
+    "hash": "00693b67a4ca772804cc436c2f5e3fe7"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\services\\gateway_ui\\public\\observability.html": {
+    "mtime": 1778869645.9453936,
+    "hash": "4bcde729f9b7b60255fc8e3102020fb8"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\services\\gateway_ui\\public\\orchestration.html": {
+    "mtime": 1778869645.9453936,
+    "hash": "bff919990cf00066c9038495365cab2b"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\services\\victim_sandbox\\README.md": {
+    "mtime": 1778869645.9494617,
+    "hash": "cfc28548314f6255f8b3ea907cd533fd"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\services\\victim_sandbox\\siem\\requirements.txt": {
+    "mtime": 1778869645.9515893,
+    "hash": "13647a4a7cf7f9940a249530b2cf27e8"
+  },
+  "D:\\ascent_hackathon\\ascent_gupta\\services\\victim_sandbox\\victim\\requirements.txt": {
+    "mtime": 1778869645.9535882,
+    "hash": "e707d33bbad001cc1cc2ed884c8d1d47"
+  },
+  "D:\\ascent_hackathon\\services\\brain\\README.md": {
+    "mtime": 1778845104.180502,
+    "hash": "571b12af1fcb303e9f74e2593ccc727e"
+  },
+  "D:\\ascent_hackathon\\services\\brain\\requirements.txt": {
+    "mtime": 1778869685.1399229,
+    "hash": "66176043ea4347fac5fcd7b7c4ec20b0"
+  },
+  "D:\\ascent_hackathon\\services\\brain\\prompts\\architect_prompt.txt": {
+    "mtime": 1778869501.9010246,
+    "hash": "d20eeec65abed67ef5cc9a8dfacaffbd"
+  },
+  "D:\\ascent_hackathon\\services\\brain\\prompts\\investigator_prompt.txt": {
+    "mtime": 1778894640.5454457,
+    "hash": "8b6a8c14d497f37031fb4764b7b1f51c"
+  },
+  "D:\\ascent_hackathon\\services\\brain\\prompts\\scout_prompt.txt": {
+    "mtime": 1778878278.4847271,
+    "hash": "25491e96ed72efd101832596ef7bf93a"
+  },
+  "D:\\ascent_hackathon\\services\\brain\\prompts\\summarizer_prompt.txt": {
+    "mtime": 1778869501.9027085,
+    "hash": "68ed791be7c180aa05a0db311b4d9fe8"
+  },
+  "D:\\ascent_hackathon\\services\\brain\\prompts\\verifier_prompt.txt": {
+    "mtime": 1778869501.9037335,
+    "hash": "4832f0f088c2c3c1e9912df94498bd75"
+  },
+  "D:\\ascent_hackathon\\services\\gateway_ui\\README.md": {
+    "mtime": 1778845104.1832132,
+    "hash": "ad7b00058b5a7dd6bf77794044e02d6e"
+  },
+  "D:\\ascent_hackathon\\services\\gateway_ui\\public\\auth.html": {
+    "mtime": 1778869501.9124725,
+    "hash": "7c36ad4b4774382603b937e82fb321be"
+  },
+  "D:\\ascent_hackathon\\services\\gateway_ui\\public\\index.html": {
+    "mtime": 1778895075.399729,
+    "hash": "b335573fbcf303edc5de325e3e7f41a4"
+  },
+  "D:\\ascent_hackathon\\services\\gateway_ui\\public\\logs.html": {
+    "mtime": 1778881999.9144788,
+    "hash": "169a2335b011a6088e637467ba6812cc"
+  },
+  "D:\\ascent_hackathon\\services\\gateway_ui\\public\\observability.html": {
+    "mtime": 1778890733.3858914,
+    "hash": "28e51ff99c1978949aa03538d35d09a0"
+  },
+  "D:\\ascent_hackathon\\services\\gateway_ui\\public\\orchestration.html": {
+    "mtime": 1778890718.3064873,
+    "hash": "e121f7f0b08c51c7944670b107888b93"
+  },
+  "D:\\ascent_hackathon\\services\\victim_sandbox\\README.md": {
+    "mtime": 1778845104.185744,
+    "hash": "cfc28548314f6255f8b3ea907cd533fd"
+  },
+  "D:\\ascent_hackathon\\services\\victim_sandbox\\requirements.txt": {
+    "mtime": 1778869501.920501,
+    "hash": "e5f3e3f5d13de1131baa12489cbbe744"
+  },
+  "D:\\ascent_hackathon\\services\\victim_sandbox\\siem\\requirements.txt": {
+    "mtime": 1778845091.896617,
+    "hash": "13647a4a7cf7f9940a249530b2cf27e8"
+  },
+  "D:\\ascent_hackathon\\services\\victim_sandbox\\victim\\requirements.txt": {
+    "mtime": 1778878278.5009284,
+    "hash": "1d63174f49d9d6612ddd64db3988bec0"
+  },
+  "D:\\ascent_hackathon\\stitch_autonomous_multi_agent_dashboard\\index.html": {
+    "mtime": 1778872356.419852,
+    "hash": "9def52691d3a8f3d54f7125e1d0438d8"
+  },
+  "D:\\ascent_hackathon\\stitch_autonomous_multi_agent_dashboard\\logs.html": {
+    "mtime": 1778872629.7630472,
+    "hash": "fc5de6a9589b95b71d6d0faebf29a6ad"
+  },
+  "D:\\ascent_hackathon\\stitch_autonomous_multi_agent_dashboard\\observability.html": {
+    "mtime": 1778872553.124668,
+    "hash": "f3f5b3564f31cf3ec51dd1e3fa63e473"
+  },
+  "D:\\ascent_hackathon\\stitch_autonomous_multi_agent_dashboard\\orchestration.html": {
+    "mtime": 1778872459.9258392,
+    "hash": "4ae4a08bb46c167f6a6879155c4f8190"
+  },
+  "D:\\ascent_hackathon\\stitch_autonomous_multi_agent_dashboard\\stitch_autonomous_multi_agent_dashboard\\omium_agent_orchestration\\code.html": {
+    "mtime": 1778871079.5556803,
+    "hash": "3256eb2b73869df110b16745bc208dbf"
+  },
+  "D:\\ascent_hackathon\\stitch_autonomous_multi_agent_dashboard\\stitch_autonomous_multi_agent_dashboard\\omium_command\\DESIGN.md": {
+    "mtime": 1778871079.6314428,
+    "hash": "75d210a09226f546aeec5e7b3a0d4f07"
+  },
+  "D:\\ascent_hackathon\\stitch_autonomous_multi_agent_dashboard\\stitch_autonomous_multi_agent_dashboard\\omium_dashboard_overview\\code.html": {
+    "mtime": 1778871079.518049,
+    "hash": "b5865cb88508b218e68312d7eb4ea393"
+  },
+  "D:\\ascent_hackathon\\stitch_autonomous_multi_agent_dashboard\\stitch_autonomous_multi_agent_dashboard\\omium_real_time_observability\\code.html": {
+    "mtime": 1778871079.5824323,
+    "hash": "7d281533247a349a110a82812081459e"
+  },
+  "D:\\ascent_hackathon\\stitch_autonomous_multi_agent_dashboard\\stitch_autonomous_multi_agent_dashboard\\omium_secure_access\\code.html": {
+    "mtime": 1778871079.608849,
+    "hash": "2aaf5cb6a8552743c81e7bf092762c28"
+  },
+  "D:\\ascent_hackathon\\image.png": {
+    "mtime": 1778881368.3348866,
+    "hash": "b49082fdd7a54b4c63617397fe3d2a63"
+  },
+  "D:\\ascent_hackathon\\stitch_autonomous_multi_agent_dashboard\\stitch_autonomous_multi_agent_dashboard\\omium_agent_orchestration\\screen.png": {
+    "mtime": 1778871079.5691404,
+    "hash": "287ef7b7b5a8a1d078ae136fdb50625a"
+  },
+  "D:\\ascent_hackathon\\stitch_autonomous_multi_agent_dashboard\\stitch_autonomous_multi_agent_dashboard\\omium_dashboard_overview\\screen.png": {
+    "mtime": 1778871079.5424154,
+    "hash": "ec290db9e7121b0cd1a5773f6c73f074"
+  },
+  "D:\\ascent_hackathon\\stitch_autonomous_multi_agent_dashboard\\stitch_autonomous_multi_agent_dashboard\\omium_real_time_observability\\screen.png": {
+    "mtime": 1778871079.595137,
+    "hash": "2c155da27982d4b0d4bd6d81184bd04a"
+  },
+  "D:\\ascent_hackathon\\stitch_autonomous_multi_agent_dashboard\\stitch_autonomous_multi_agent_dashboard\\omium_secure_access\\screen.png": {
+    "mtime": 1778871079.618781,
+    "hash": "c0a84020e9aa1221051a9f367f020a83"
+  }
+}

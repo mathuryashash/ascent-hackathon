@@ -32,6 +32,7 @@ services:
       - public_net
     volumes:
       - victim_data:/data
+      - ./services/victim_sandbox/victim:/app:rw
     environment:
       - DB_PATH=/data/victim.db
     user: "1001:1001"
@@ -83,6 +84,7 @@ services:
       VICTIM_DST_PATH: /victim_dst
       LOG_PATH: /app/logs/access.log
       SANDBOX_CONTAINER: chimera-sandbox-1
+      VICTIM_CONTAINER: chimera-victim-1
       VICTIM_HOST: http://chimera-victim-1:5000
       ALLOWED_ORIGIN: "*"
       # Set to HTB\{[^}]+\} for HackTheBox, or leave default to match both HTB and CHIMERA flags

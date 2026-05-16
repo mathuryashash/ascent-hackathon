@@ -21,6 +21,7 @@ import docker
 LOG_PATH = os.environ.get("LOG_PATH", "/app/victim-logs/access.log")
 VICTIM_SRC_PATH = os.environ.get("VICTIM_SRC_PATH", "/app/victim-src/")
 SANDBOX_CONTAINER_NAME = os.environ.get("SANDBOX_CONTAINER", "chimera-sandbox")
+VICTIM_CONTAINER_NAME = os.environ.get("VICTIM_CONTAINER", "chimera-victim-1")
 VICTIM_HOST = os.environ.get("VICTIM_HOST", "http://chimera-victim:5000")
 
 SUSPICIOUS_KEYWORDS = ["UNION", "SELECT", "--", "OR 1=1", "DROP", "INSERT", "'"]
@@ -180,6 +181,27 @@ def get_victim_source(filename: str = "app.py") -> dict:
             "stderr": str(e),
             "exit_code": -1
         }
+
+def restart_victim_container(wait_timeout: int = 45) -> dict:
+    """Restarts the victim container and waits for it to be healthy."""
+    import time
+    try:
+        client = docker.from_env()
+        container = client.containers.get(VICTIM_CONTAINER_NAME)
+        container.restart(timeout=10)
+        deadline = time.time() + wait_timeout
+        while time.time() < deadline:
+            container.reload()
+            health = container.attrs.get("State", {}).get("Health", {}).get("Status", "")
+            if health == "healthy":
+                return {"status": "success"}
+            if health == "unhealthy":
+                return {"status": "error", "message": "Victim became unhealthy after restart"}
+            time.sleep(2)
+        return {"status": "error", "message": "Timed out waiting for victim health"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 
 def search_vulnerabilities(query: str) -> dict:
     """Researches a vulnerability or CWE online to find exploitation techniques."""
